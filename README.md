@@ -43,18 +43,39 @@ vault/
 
 ## 安裝
 
-### 手動安裝（開發中）
+### 手動安裝
+
+**Step 1：Clone 專案**
 
 ```bash
 git clone https://github.com/leadingtw/obsidian-vault-tool ~/.claude/plugins/obsidian-vault-tool
 ```
 
-### 依賴安裝
+**Step 2：將 skills 連結至 Claude Code 載入目錄**
+
+```bash
+mkdir -p ~/.claude/skills
+ln -s ~/.claude/plugins/obsidian-vault-tool/skills/* ~/.claude/skills/
+```
+
+> **為什麼需要這步驟？**
+> Claude Code 只會自動載入 `~/.claude/skills/` 目錄下的 skills，單純 clone 到 `~/.claude/plugins/` 並不會觸發自動掃描。透過建立 symbolic link，skills 實體仍在 plugin 目錄中（方便日後 `git pull` 更新），但 Claude Code 可以從 `~/.claude/skills/` 正常讀取。
+
+**Step 3：安裝依賴**
 
 ```
 /plugin marketplace add kepano/obsidian-skills
 /plugin install obsidian@obsidian-skills
 ```
+
+### 更新
+
+```bash
+cd ~/.claude/plugins/obsidian-vault-tool
+git pull
+```
+
+Skills 的 symlink 不需重建，更新會直接反映。
 
 ## 使用方式
 
