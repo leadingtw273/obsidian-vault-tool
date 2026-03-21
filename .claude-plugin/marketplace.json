@@ -1,0 +1,14 @@
+{
+  "name": "obsidian-vault-tool",
+  "owner": {
+    "name": "leadingtw"
+  },
+  "plugins": [
+    {
+      "name": "obsidian-vault-tool",
+      "source": "./",
+      "description": "Obsidian Vault 知識庫管理工具：初始化結構、歸檔筆記、Tag 品質控制",
+      "version": "0.1.0"
+    }
+  ]
+}

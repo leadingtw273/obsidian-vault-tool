@@ -1,0 +1,11 @@
+{
+  "name": "obsidian-vault-tool",
+  "version": "0.1.0",
+  "description": "Obsidian Vault 知識庫管理工具：互動精靈建立知識庫、歸檔筆記、Tag 品質控制",
+  "author": {
+    "name": "leadingtw"
+  },
+  "repository": "https://github.com/leadingtw/obsidian-vault-tool",
+  "license": "MIT",
+  "keywords": ["obsidian", "vault", "knowledge-management", "archive", "tag"]
+}
