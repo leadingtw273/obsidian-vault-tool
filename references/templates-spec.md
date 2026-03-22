@@ -10,20 +10,20 @@
 
 | 檔名 | category | content_type |
 |------|----------|--------------|
-| `對話筆記.md` | `對話歷史` | `ClaudeCode` |
-| `知識筆記.md` | （由 tags[0] 第一層決定） | （依來源決定） |
+| `來源記錄.md` | `來源紀錄`（固定） | 動態（conversation / youtube / fb-post / article / pdf / webpage） |
+| `知識筆記.md` | 由 `tags[0]` 第一層決定 | 依來源決定 |
 
 ---
 
-## 對話筆記模板（`對話筆記.md`）
+## 來源記錄模板（`來源記錄.md`）
 
 ```yaml
 ---
 title:
-date:
+date: "{{date}}"
 source:
-category: 對話歷史
-content_type: ClaudeCode
+category: 來源紀錄
+content_type:
 author:
 ---
 ```
@@ -33,7 +33,7 @@ author:
 ```yaml
 ---
 title:
-date:
+date: "{{date}}"
 tags:
   -
 source:
@@ -46,6 +46,7 @@ author:
 ## 注意
 
 - `date` 欄位需加引號：`"{{date}}"` 而非 `{{date}}`
-- 對話筆記的 `source` 填 session-id（對話識別碼）
+- 來源記錄的 `source` 填原始 URL 或對話識別資訊
+- 來源記錄的 `content_type` 填實際類型：`conversation` / `youtube` / `fb-post` / `article` / `pdf` / `webpage`
 - 知識筆記的 `category` 由 `tags[0]` 第一層動態決定（如 `技術/AI/LLM` → `技術`）
-- 知識筆記的 `source` 填 `[[對話筆記檔名]]` 或原始 URL
+- 知識筆記的 `source` 填 `[[來源記錄檔名]]`（由 archive 呼叫時）或原始 URL（standalone 時）

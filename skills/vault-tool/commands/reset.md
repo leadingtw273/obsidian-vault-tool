@@ -58,14 +58,14 @@
 
 在 `templates/` 目錄**覆蓋**以下 2 個模板（無論是否已存在）：
 
-**`對話筆記.md`**：
+**`來源記錄.md`**：
 ```yaml
 ---
 title:
 date: "{{date}}"
 source:
-category: 對話歷史
-content_type: ClaudeCode
+category: 來源紀錄
+content_type:
 author:
 ---
 ```
@@ -132,7 +132,7 @@ templates/
 
 ```
 ✓ CLAUDE.md 已完全重新生成（plugin v[version]）
-✓ 2 個模板已全部覆蓋（對話筆記、知識筆記）
+✓ 2 個模板已全部覆蓋（來源記錄、知識筆記）
 ✓ .obsidian 設定已完全重寫（或：.obsidian 不存在，略過）
 ✓ 資料夾結構已補齊
 ✓ 筆記內容完整保留，未受影響

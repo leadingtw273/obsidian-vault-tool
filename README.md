@@ -11,30 +11,46 @@ Obsidian Vault 知識庫管理工具，作為 Claude Code Plugin 分發。
   - **update**：更新 plugin 設定至最新版本（保留使用者自訂內容）
   - **reset**：重置所有 plugin 管理的設定與模板（筆記不受影響）
   - **delete**：移除管理設定或刪除整個 Vault
-- **`session-archive` skill**：將當前對話歸檔，萃取知識主題，寫入知識筆記與對話筆記
-- **`knowledge-archive` skill**：將外部資源（URL、文章、影片等）萃取精華後歸檔至主題知識
-- **`tag-review` skill**：歸檔時的標籤品質控制子任務
+- **`archive` skill**：完整歸檔主入口，同時產生來源記錄（歷史紀錄/）與知識筆記（主題知識/），支援對話、YouTube、Facebook、文章、PDF、網頁等所有來源
+- **`record-archive` skill**：只建立來源記錄，不萃取知識筆記
+- **`knowledge-archive` skill**：只萃取知識筆記，不建立來源記錄
+- **`tag-review` skill**：歸檔時的標籤品質控制，由 archive / knowledge-archive 自動呼叫
+- **`social-scraper` skill**：透過 Playwright MCP 從 Facebook、YouTube 等社群平台抓取最新貼文與影片內容；歸檔社群 URL 時由 record-writer 自動呼叫
 
 ## 知識庫架構
 
 ```
 vault/
 ├── 歷史紀錄/
-│   └── 對話/               # 對話筆記（session-archive 寫入）
-│       └── YYYY-MM-DD/
-├── 主題知識/                # 知識筆記（兩種 archive 均寫入）
+│   ├── 對話/               # 來源記錄（conversation），初始化時建立
+│   ├── YouTube/            # 來源記錄（youtube），動態建立
+│   ├── Facebook/           # 來源記錄（fb-post），動態建立
+│   ├── 文章/               # 來源記錄（article），動態建立
+│   ├── 文件/               # 來源記錄（pdf），動態建立
+│   └── 網頁/               # 來源記錄（webpage），動態建立
+│       └── YYYY-MM-DD/     # 子資料夾，檔名 [序號]_[概述].md
+├── 主題知識/                # 知識筆記（archive / knowledge-archive 寫入）
 │   └── YYYY-MM-DD/
 └── templates/
-    ├── 對話筆記.md
+    ├── 來源記錄.md
     └── 知識筆記.md
 ```
 
-### 兩種歸檔類型
+### 三種歸檔 skill
 
-| 類型 | Skill | 觸發情境 | 流程 |
-|------|-------|---------|------|
-| **SessionArchive** | `session-archive` | 「歸檔這次對話」、「總結對話」 | 獲取對話 → 分析 → 知識筆記×N（平行）→ 對話筆記 |
-| **SourceArchive** | `knowledge-archive` | 貼上 URL、「幫我整理這個」 | 獲取內容 → 分析 → 知識筆記×N（平行） |
+| Skill | 觸發情境 | 產出 |
+|-------|---------|------|
+| **`archive`** | 「歸檔這次對話」、「把這個存到知識庫」、貼上 URL | 來源記錄 + 知識筆記（雙向 wikilink） |
+| **`record-archive`** | 「只記錄這個來源」、「只要來源記錄」 | 來源記錄（無知識筆記） |
+| **`knowledge-archive`** | 「只要知識整理」、「不需來源記錄」 | 知識筆記（無來源記錄） |
+
+### archive 執行架構
+
+```
+archive skill
+├─ record-writer agent（內容獲取 + 分析 + 建立來源記錄）
+└─ knowledge-writer agent × N（平行，從來源記錄讀取原文，撰寫知識筆記）
+```
 
 ## 前置需求
 
@@ -96,10 +112,12 @@ Skills 的 symlink 不需重建，更新會直接反映。
 
 初始化完成後，skills 會在對應情境下自動觸發：
 
-- 說「歸檔這次對話」→ `session-archive`（4 步流程）
-- 貼上 URL 說「幫我整理這個」→ `knowledge-archive`（3 步流程）
-- 歸檔操作中 → `tag-review`（由其他 skills 自動呼叫）
+- 說「歸檔這次對話」或貼上 URL 說「幫我整理這個」→ `archive`（完整歸檔）
+- 說「只要知識整理」→ `knowledge-archive`
+- 說「只要來源記錄」→ `record-archive`
+- 歸檔操作中 → `tag-review`（由其他 skill 自動呼叫）
+- 說「抓取內容」「初始化社群抓取」→ `social-scraper`（Facebook / YouTube 爬取）
 
 ## 版本
 
-`0.2.0` — 重構知識庫架構，移除 Playground 概念，改採 SessionArchive / SourceArchive 雙軌歸檔
+`0.3.0` — 重構歸檔架構，引入 archive 主 skill + custom agent 兩階段設計（record-writer → knowledge-writer × N），統一來源記錄（支援對話/YouTube/Facebook 等全類型），移除 session-archive

@@ -1,0 +1,29 @@
+{
+  "_comment": "複製此檔案為 ~/.claude/social-scraper/config/targets.json 並填入你的追蹤目標",
+  "targets": [
+    {
+      "name": "我的 FB",
+      "platform": "facebook",
+      "type": "profile",
+      "url": "https://www.facebook.com/your.profile.name"
+    },
+    {
+      "name": "某粉絲專頁（範例）",
+      "platform": "facebook",
+      "type": "page",
+      "url": "https://www.facebook.com/pagename"
+    },
+    {
+      "name": "某社團（範例）",
+      "platform": "facebook",
+      "type": "group",
+      "url": "https://www.facebook.com/groups/groupname"
+    },
+    {
+      "name": "某 YT 頻道（範例）",
+      "platform": "youtube",
+      "type": "channel",
+      "url": "https://www.youtube.com/@channelname"
+    }
+  ]
+}

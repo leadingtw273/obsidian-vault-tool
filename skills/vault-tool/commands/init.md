@@ -11,7 +11,7 @@
 
 > 我將透過此精靈協助您建立完整的 Obsidian 知識庫，包含：
 > - 標準資料夾結構（歷史紀錄/對話/、主題知識/、templates/）
-> - 2 種筆記模板（對話筆記、知識筆記）
+> - 2 種筆記模板（來源記錄、知識筆記）
 > - CLAUDE.md 設定檔（讓 Claude 了解此 Vault 的操作規範）
 
 ---
@@ -95,14 +95,14 @@ templates/
 
 在 `templates/` 目錄建立以下 2 個模板（不存在則建立，已存在略過）：
 
-**`對話筆記.md`**：
+**`來源記錄.md`**：
 ```yaml
 ---
 title:
 date: "{{date}}"
 source:
-category: 對話歷史
-content_type: ClaudeCode
+category: 來源紀錄
+content_type:
 author:
 ---
 ```
@@ -215,13 +215,15 @@ vault_path_windows: [vault_path_windows]
 
 ```
 ✓ 資料夾結構建立完成（歷史紀錄/對話/、主題知識/、templates/）
-✓ 模板檔案建立完成（templates/ 目錄下 2 個模板：對話筆記、知識筆記）
+✓ 模板檔案建立完成（templates/ 目錄下 2 個模板：來源記錄、知識筆記）
 ✓ CLAUDE.md 已生成（plugin v[version]）
 ✓ .obsidian 設定已對齊（或：.obsidian 尚未建立，Obsidian 首次開啟後可重新執行）
 ✓ 全域 CLAUDE.md 已記錄此 Vault
 
 Vault 已就緒。可用的 skills：
-- session-archive：歸檔這次對話、總結對話時觸發
-- knowledge-archive：整理外部連結、歸檔外部資訊時觸發
+- archive：歸檔任何來源（對話、URL、文章、YouTube 等）時觸發，同時產生來源記錄與知識筆記
+- knowledge-archive：只要知識整理、不需來源記錄時觸發
+- record-archive：只要來源記錄、不需知識整理時觸發
 - tag-review：歸檔時自動呼叫，確保標籤品質
+- social-scraper：抓取 Facebook、YouTube 等社群媒體內容
 ```

@@ -4,7 +4,7 @@ description: >
   Obsidian Vault 的標籤品質控制工具，負責審查、補充、修正知識筆記的 tags。
   收集既有標籤庫、分析筆記內容、建議符合 vault 格式規範（中文層級結構）
   且語意準確的標籤，確保主題知識分類一致性。
-  被 session-archive 和 source-archive（knowledge-archive）自動呼叫（不需手動觸發）。
+  被 archive / knowledge-archive 透過 knowledge-writer agent 自動呼叫（不需手動觸發）。
   當使用者提到筆記的 tag、標籤、分類、frontmatter tags 相關問題時一律使用，
   包含但不限於：「幫我審查/檢查這篇的 tag」、「這篇應該加什麼標籤」、
   「幫我分類這篇筆記」、「整理 tag」、「tag 不對」、「補完標籤」、
@@ -13,7 +13,7 @@ description: >
 allowed-tools: ["Read", "Write", "Edit", "Glob", "Grep", "Bash(${CLAUDE_PLUGIN_ROOT}/skills/obsidian-wsl-cli/scripts/obsidian.sh:*)"]
 ---
 
-> **前置檢查**（直接觸發時執行；由 session-archive / knowledge-archive 呼叫時略過）：
+> **前置檢查**（直接觸發時執行；由其他 skill / agent 呼叫時略過）：
 > 1. 確認 Vault 根目錄存在 `CLAUDE.md`。
 >    若不存在，**停止並提示**：「知識庫尚未初始化，請說『幫我建立知識庫』開始設定。」
 > 2. 確認 CLAUDE.md 中 `plugin_version` 與當前 plugin 版本一致。
@@ -24,14 +24,14 @@ allowed-tools: ["Read", "Write", "Edit", "Glob", "Grep", "Bash(${CLAUDE_PLUGIN_R
 這個 skill 確保 Vault 的標籤系統一致性與品質，讓每篇知識筆記都能被正確分類與找到。
 好的標籤策略讓 `主題知識/` 資料夾結構清晰，搜尋效率高。
 
-**注意**：Tag Review 僅適用於**知識筆記**。對話筆記無 tags 欄位，不執行此 skill。
+**注意**：Tag Review 僅適用於**知識筆記**。來源記錄無 tags 欄位，不執行此 skill。
 
 ## 標籤格式規則
 
 標籤採用**中文層級結構**，三段組合：
 
 1. **層級結構標籤**（1 個）：完整路徑，放 `tags[0]`，決定 `category`
-   - 範例：`技術/AI/LLM`、`商業/行銷/內容行銷`、`個人/閱讀`
+   - 範例：`技術/AI/LLM`、`商業/行銷`、`個人/成長`
 2. **層級拆解標籤**（2-3 個）：將層級結構拆開各層
    - 範例：`技術`、`AI`、`LLM`
 3. **其他描述標籤**（2-5 個）：補充具體主題或關鍵詞
@@ -44,11 +44,13 @@ allowed-tools: ["Read", "Write", "Edit", "Glob", "Grep", "Bash(${CLAUDE_PLUGIN_R
 `category` 永遠等於 `tags[0]` 路徑的**第一層**：
 - `技術/AI/LLM` → `category: 技術`
 - `商業/行銷` → `category: 商業`
-- `個人/閱讀` → `category: 個人`
+- `個人/成長` → `category: 個人`
 
 ---
 
 ## 執行步驟
+
+> 執行前讀取 `${CLAUDE_PLUGIN_ROOT}/references/tag-topic-spec.md`，依其中定義的階層結構選擇合法分類。
 
 ### 1. 收集既有標籤
 
@@ -111,6 +113,6 @@ obsidian tags counts format=json
 | 觸發來源 | 行為 |
 |---------|------|
 | **使用者直接對話** | 輸出建議表格後，**必須**以問句結尾等待確認，例如：「請問是否要將這些標籤寫入 frontmatter？」，收到明確確認後才執行寫入 |
-| **由 session-archive / knowledge-archive 呼叫** | 直接回傳建議標籤結果給呼叫方，由主 agent 決定後續處理，不詢問使用者 |
+| **由其他 skill / agent 呼叫** | 直接回傳建議標籤結果給呼叫方，由主 agent 決定後續處理，不詢問使用者 |
 
 如何判斷觸發來源：收到的指令來自對話框的使用者訊息 = 直接對話；收到的指令說明是從另一個 skill 傳入的任務 = skill 呼叫。

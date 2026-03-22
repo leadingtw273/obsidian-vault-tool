@@ -4,6 +4,16 @@
 
 ---
 
+## 前置條件：確認 Vault 資訊
+
+優先從現有 `CLAUDE.md` 讀取 `vault_name`、`vault_path`、`vault_path_windows`。
+
+若使用者在訊息中已提供 vault 名稱或路徑，直接沿用；若未提供，從 `~/.claude/CLAUDE.md` 的 Vault 區塊讀取。
+
+若 CLAUDE.md 已損壞或缺少關鍵欄位，重新詢問使用者。
+
+---
+
 ## 步驟 1：列出影響範圍，選擇模式
 
 向使用者說明三種刪除模式，**要求選擇**：
@@ -13,15 +23,15 @@
 > **1. soft（軟刪除）**
 > 僅移除 plugin 管理的設定檔：
 > - 刪除 `CLAUDE.md`
-> - 刪除 `templates/` 目錄下由 plugin 建立的 5 個模板
+> - 刪除 `templates/` 目錄下由 plugin 建立的 2 個模板
 > - 移除 `.obsidian/templates.json`、`app.json` 中由 plugin 管理的欄位
 > - 筆記、資料夾結構、其他 .obsidian 設定完整保留
 >
 > **2. medium（中度刪除）**
 > 同 soft，另外移除空的管理資料夾：
 > - 若 `templates/` 為空：刪除資料夾
-> - 若 `History/Sessions/`、`History/SystemPrompt/`、`History/Plans/`、`History/Playground/` 為空：刪除這些子資料夾
-> - `Knowledge/`、`Playground/`、有內容的資料夾保留
+> - 若 `歷史紀錄/` 下各子目錄（對話/YouTube/Facebook/文章/文件/網頁）為空：刪除這些子資料夾
+> - `主題知識/`、有內容的資料夾保留
 >
 > **3. hard（完全刪除）**
 > 刪除整個 Vault 目錄（`[vault_path]`）。
@@ -36,7 +46,7 @@
 ### Soft 模式
 
 1. 刪除 `[vault_path]/CLAUDE.md`
-2. 刪除 `templates/` 下的 5 個 plugin 模板（`knowledge.md`、`history-session.md`、`history-prompt.md`、`history-plan.md`、`history-playground.md`），其他使用者自建模板不動
+2. 刪除 `templates/` 下的 2 個 plugin 模板（`來源記錄.md`、`知識筆記.md`），其他使用者自建模板不動
 3. 若 `.obsidian/templates.json` 存在：刪除整個檔案（或移除 plugin 管理欄位）
 4. 若 `.obsidian/app.json` 存在：移除 `newFileLocation`、`newFileFolderPath` 欄位，保留其餘欄位
 
@@ -46,11 +56,13 @@
 
 5. 若 `templates/` 目錄為空：刪除 `templates/`
 6. 逐一檢查以下資料夾，若為空則刪除：
-   - `History/Sessions/`
-   - `History/SystemPrompt/`
-   - `History/Plans/`
-   - `History/Playground/`
-   - 若上述子資料夾全部刪除後 `History/` 為空：刪除 `History/`
+   - `歷史紀錄/對話/`
+   - `歷史紀錄/YouTube/`
+   - `歷史紀錄/Facebook/`
+   - `歷史紀錄/文章/`
+   - `歷史紀錄/文件/`
+   - `歷史紀錄/網頁/`
+   - 若上述子資料夾全部刪除後 `歷史紀錄/` 為空：刪除 `歷史紀錄/`
 
 ### Hard 模式
 

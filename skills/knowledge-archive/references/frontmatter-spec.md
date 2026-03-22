@@ -4,9 +4,20 @@ Vault 有兩種筆記類型，各自使用不同的 frontmatter schema。
 
 ---
 
-## 一、對話筆記（Session Note）
+## 一、來源記錄（Source Record）
 
-存放路徑：`歷史紀錄/對話/[YYYY-MM-DD]/[序號]_[概述].md`
+存放路徑：`歷史紀錄/[type]/[YYYY-MM-DD]/[序號]_[概述].md`
+
+`[type]` 依來源類型決定：
+
+| content_type | 目錄 |
+|---|---|
+| `conversation` | `歷史紀錄/對話/` |
+| `youtube` | `歷史紀錄/YouTube/` |
+| `fb-post` | `歷史紀錄/Facebook/` |
+| `article` | `歷史紀錄/文章/` |
+| `pdf` | `歷史紀錄/文件/` |
+| `webpage` | `歷史紀錄/網頁/` |
 
 ### Schema（6 欄位）
 
@@ -15,8 +26,8 @@ Vault 有兩種筆記類型，各自使用不同的 frontmatter schema。
 title:
 date:
 source:
-category: 對話歷史
-content_type: ClaudeCode
+category: 來源紀錄
+content_type:
 author:
 ---
 ```
@@ -25,12 +36,12 @@ author:
 
 | 欄位 | 型別 | 說明 |
 |------|------|------|
-| `title` | string | 對話標題，簡潔描述對話主題 |
-| `date` | string | 對話日期，格式 `YYYY-MM-DD` |
-| `source` | string | session-id（對話識別碼，用於追溯來源） |
-| `category` | string | 固定填 `對話歷史` |
-| `content_type` | string | 固定填 `ClaudeCode` |
-| `author` | string | 對話參與者（通常填使用者名稱） |
+| `title` | string | 來源標題（文章標題、影片標題、對話概述等） |
+| `date` | string | 歸檔日期，格式 `YYYY-MM-DD` |
+| `source` | string | 原始 URL 或對話識別資訊 |
+| `category` | string | 固定填 `來源紀錄` |
+| `content_type` | string | 來源類型，見上方表格的 enum 值 |
+| `author` | string | 原始作者，不適用則留空 |
 
 ---
 
@@ -60,7 +71,7 @@ author:
 | `title` | string | 筆記標題 |
 | `date` | string | 建立日期，格式 `YYYY-MM-DD` |
 | `tags` | list | 中文層級結構標籤，見標籤規則 |
-| `source` | string | `[[對話筆記檔名]]`（來自 session）或 URL（來自外部資源） |
+| `source` | string | `[[來源記錄檔名]]`（由 archive skill 呼叫時）或完整 URL（standalone 呼叫時） |
 | `category` | string | 動態決定，等於 `tags[0]` 的第一層（如 `技術/AI/LLM` → `技術`） |
 | `content_type` | string | 原始內容形式，見 enum 值 |
 | `author` | string | 原始作者，不適用填空白 |
@@ -86,10 +97,10 @@ author:
 
 ### source 雙重用途
 
-| 來源類型 | source 填法 |
+| 呼叫方式 | source 填法 |
 |---------|------------|
-| 來自對話（SessionArchive 產生的知識筆記） | `[[對話筆記檔名]]`（vault 內部連結） |
-| 來自外部資源（SourceArchive 處理的 URL） | 完整 URL 字串 |
+| 由 `archive` skill 呼叫（透過 knowledge-writer agent） | `[[來源記錄檔名]]`（vault 內部連結） |
+| 由 `knowledge-archive` standalone 呼叫 | 完整 URL 字串 |
 
 ---
 
