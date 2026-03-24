@@ -3,7 +3,8 @@ name: knowledge-writer
 description: 針對指定主題從來源內容深度萃取，撰寫一篇知識筆記並存入主題知識目錄，依照 vault CLAUDE.md 的格式規範執行
 skills:
   - tag-review
-tools: Read, Write, Edit, Glob, Grep, Bash
+  - obsidian-wsl-cli
+tools: Read, Glob, Grep, Bash
 model: sonnet
 color: green
 ---
@@ -44,7 +45,7 @@ color: green
 4. **確認存放路徑**：`主題知識/[YYYY-MM-DD]/[標題].md`
    - 日期為當日（格式 `YYYY-MM-DD`）
    - 子資料夾不存在時動態建立
-5. **寫入筆記**
+5. **寫入筆記**（禁止使用 Write/Edit tool 寫入 vault 路徑，依照 obsidian-wsl-cli skill 的「標準呼叫命令」執行）
 
 ## 筆記格式
 

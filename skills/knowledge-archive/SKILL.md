@@ -4,7 +4,7 @@ description: >
   將外部資訊萃取精華後只歸檔至主題知識目錄，不建立來源記錄。
   觸發情境：使用者說「只要知識整理」、「幫我萃取知識」、「不需要來源記錄」時使用。
   完整歸檔（同時產生來源記錄）請使用 archive skill。
-allowed-tools: ["Read", "Write", "Edit", "Glob", "Grep", "Bash(${CLAUDE_PLUGIN_ROOT}/skills/obsidian-wsl-cli/scripts/obsidian.sh:*)", "Agent"]
+allowed-tools: ["Read", "Glob", "Grep", "Agent"]
 ---
 
 > **前置檢查**：

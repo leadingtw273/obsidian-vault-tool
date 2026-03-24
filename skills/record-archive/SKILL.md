@@ -5,7 +5,7 @@ description: >
   觸發情境：使用者說「只記錄這個來源」、「記錄一下這篇」、「存個來源記錄」、
   「不需要知識整理，只要留個紀錄」時使用。
   完整歸檔（同時產生知識筆記）請使用 archive skill。
-allowed-tools: ["Read", "Write", "Edit", "Glob", "Grep", "Bash(${CLAUDE_PLUGIN_ROOT}/skills/obsidian-wsl-cli/scripts/obsidian.sh:*)", "Agent"]
+allowed-tools: ["Read", "Glob", "Grep", "Agent"]
 ---
 
 > **前置檢查**：

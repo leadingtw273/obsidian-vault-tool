@@ -3,7 +3,8 @@ name: record-writer
 description: 獲取並分析任何來源內容，建立來源記錄並附上完整原文，產出知識主題列表供後續 knowledge-writer 使用
 skills:
   - social-scraper
-tools: Read, Write, Edit, Glob, Grep, Bash, WebFetch, mcp__plugin_playwright_playwright__browser_navigate, mcp__plugin_playwright_playwright__browser_snapshot, mcp__plugin_playwright_playwright__browser_click, mcp__plugin_playwright_playwright__browser_evaluate, mcp__plugin_playwright_playwright__browser_run_code, mcp__plugin_playwright_playwright__browser_fill_form, mcp__plugin_playwright_playwright__browser_wait_for, mcp__plugin_playwright_playwright__browser_press_key
+  - obsidian-wsl-cli
+tools: Read, Glob, Grep, Bash, WebFetch, mcp__plugin_playwright_playwright__browser_navigate, mcp__plugin_playwright_playwright__browser_snapshot, mcp__plugin_playwright_playwright__browser_click, mcp__plugin_playwright_playwright__browser_evaluate, mcp__plugin_playwright_playwright__browser_run_code, mcp__plugin_playwright_playwright__browser_fill_form, mcp__plugin_playwright_playwright__browser_wait_for, mcp__plugin_playwright_playwright__browser_press_key
 model: sonnet
 color: purple
 memory: user
@@ -68,6 +69,10 @@ memory: user
 2. **確認序號**：列出當日目標目錄已有幾個檔案，序號 = 現有數量 + 1，補零至兩位（如 `01`、`02`）
 3. **確定檔名**：`[序號]_[來源概述].md`（例如：`01_Python入門教學.md`）
 4. **建立日期子資料夾**（若不存在）
+
+### 寫入方法
+
+禁止使用 Write/Edit tool 寫入 vault 路徑。所有 Vault 寫入依照 obsidian-wsl-cli skill 的「標準呼叫命令」執行。
 
 ### 4. 寫入來源記錄
 

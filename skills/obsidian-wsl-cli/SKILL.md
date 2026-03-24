@@ -42,6 +42,52 @@ bash "{此 SKILL.md 所在目錄}/scripts/obsidian.sh" [原始 obsidian 參數]
 
 **非 WSL2 環境**：直接執行原本的 obsidian CLI 指令，無需包裝。
 
+## 標準呼叫命令
+
+所有 agent/skill 透過以下格式呼叫。`${CLAUDE_PLUGIN_ROOT}` 為 plugin 環境內建變數，無需手動設定。
+
+**obsidian.sh 路徑**：
+```
+${CLAUDE_PLUGIN_ROOT}/skills/obsidian-wsl-cli/scripts/obsidian.sh
+```
+
+### 寫入筆記（content_file 參數，適合長文內容）
+
+```bash
+# Step 1：用 Bash heredoc 將 markdown 完整內容寫入暫存檔
+cat > /tmp/claude-0/note.md << 'ENDOFFILE'
+---
+[frontmatter]
+---
+[正文]
+ENDOFFILE
+
+# Step 2：透過 obsidian CLI 寫入 vault（腳本完成後自動清除暫存檔）
+bash "${CLAUDE_PLUGIN_ROOT}/skills/obsidian-wsl-cli/scripts/obsidian.sh" create \
+  path="[vault 內相對路徑]" \
+  content_file="/tmp/claude-0/note.md" \
+  vault=[vault_name]
+```
+
+### 讀取筆記（驗證寫入結果）
+
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/skills/obsidian-wsl-cli/scripts/obsidian.sh" read \
+  path="[vault 內相對路徑]" \
+  vault=[vault_name]
+```
+
+### 其他指令（open、search 等）
+
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/skills/obsidian-wsl-cli/scripts/obsidian.sh" [subcommand] [args...]
+```
+
+### 取得 vault_name
+
+`vault_name` 從 vault 根目錄 `CLAUDE.md` 的 `vault_name` 欄位取得。
+
 ## 注意
 
-- `obsidian.sh` 內部透過 `powershell.exe -Command "obsidian $*"` 轉發，需確認 PowerShell 可在 WSL2 中執行
+- `obsidian.sh` 內部透過 `powershell.exe` 轉發，需確認 PowerShell 可在 WSL2 中執行
+- `content_file=` 參數會在寫入完成後自動清除暫存檔，無需手動刪除

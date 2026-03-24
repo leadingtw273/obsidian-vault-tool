@@ -10,7 +10,7 @@ description: >
   「幫我分類這篇筆記」、「整理 tag」、「tag 不對」、「補完標籤」、
   「標籤放在哪個前綴」、「確認 tag 是否符合慣例」、「frontmatter tags 幫我看看」、
   「這篇的 tag 感覺不夠/不對/要改」等各種說法。
-allowed-tools: ["Read", "Write", "Edit", "Glob", "Grep", "Bash(${CLAUDE_PLUGIN_ROOT}/skills/obsidian-wsl-cli/scripts/obsidian.sh:*)"]
+allowed-tools: ["Read", "Glob", "Grep", "Bash"]
 ---
 
 > **前置檢查**（直接觸發時執行；由其他 skill / agent 呼叫時略過）：
@@ -112,7 +112,7 @@ obsidian tags counts format=json
 
 | 觸發來源 | 行為 |
 |---------|------|
-| **使用者直接對話** | 輸出建議表格後，**必須**以問句結尾等待確認，例如：「請問是否要將這些標籤寫入 frontmatter？」，收到明確確認後才執行寫入 |
+| **使用者直接對話** | 輸出建議表格後，**必須**以問句結尾等待確認，例如：「請問是否要將這些標籤寫入 frontmatter？」，收到明確確認後，透過 obsidian CLI read 讀取原檔完整內容、在記憶體中更新 frontmatter tags 欄位、用 obsidian CLI create 覆蓋寫回（依照 obsidian-wsl-cli skill 的「標準呼叫命令」執行） |
 | **由其他 skill / agent 呼叫** | 直接回傳建議標籤結果給呼叫方，由主 agent 決定後續處理，不詢問使用者 |
 
 如何判斷觸發來源：收到的指令來自對話框的使用者訊息 = 直接對話；收到的指令說明是從另一個 skill 傳入的任務 = skill 呼叫。

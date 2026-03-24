@@ -1,1 +1,3 @@
 deploy-to-cache.sh
+
+.playwright-mcp/
