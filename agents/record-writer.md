@@ -40,6 +40,24 @@ memory: user
 
 ## 執行步驟
 
+### 0. 檢查是否已歸檔
+
+**僅適用於 URL 輸入**（對話原文與直接貼入文字略過此步驟）
+
+1. 透過 obsidian-wsl-cli skill 執行搜尋，在 vault 中搜尋此 URL：
+   ```bash
+   bash "${CLAUDE_PLUGIN_ROOT}/skills/obsidian-wsl-cli/scripts/obsidian.sh" search query="<URL>" vault=<vault_name>
+   ```
+2. 從結果中檢查是否有位於「歷史紀錄/」目錄下的檔案包含此 URL
+3. 若找到符合記錄：
+   - 輸出以下訊息並**立即終止，不繼續後續步驟**：
+     ```
+     ⚠️ 此來源已歸檔，跳過。
+
+     已歸檔記錄：[完整檔案路徑]
+     ```
+4. 若未找到：繼續執行步驟 1
+
 ### 1. 獲取內容
 
 - 若為 **URL**：
@@ -72,7 +90,8 @@ memory: user
 
 ### 寫入方法
 
-禁止使用 Write/Edit tool 寫入 vault 路徑。所有 Vault 寫入依照 obsidian-wsl-cli skill 的「標準呼叫命令」執行。
+使用 obsidian CLI 寫入 vault。
+若偵測到 WSL2 環境（vault 路徑含 `/mnt/`、CLAUDE.md 有 `vault_path_windows`、或使用者提到 WSL），則改用 obsidian-wsl-cli skill 的「標準呼叫命令」執行。
 
 ### 4. 寫入來源記錄
 

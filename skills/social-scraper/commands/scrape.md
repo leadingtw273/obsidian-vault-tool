@@ -1,23 +1,27 @@
 # Scrape：抓取內容
 
-從設定的追蹤目標抓取最新貼文與影片，全程自動執行，無需使用者介入。
+使用者提供 URL，爬取該頁面的完整內容並以結構化格式回傳。
 
 ---
 
-## Step 0：讀取設定
+## Step 0：取得 URL
 
-讀取 `~/.claude/social-scraper/config/targets.json`。
+使用者應在觸發時提供要爬取的 URL。
 
-若檔案不存在，停止並提示：
-> 尚未完成初始化，請先說「初始化社群抓取」。
-
-將 targets 按 `platform` 欄位分組：
-- `facebook` 類型的目標 → 使用 `playwright-auth/facebook.json` session
-- `youtube` 類型的目標 → 使用 `playwright-auth/youtube.json` session
+若未提供，詢問：
+> 請提供要爬取的網址。
 
 ---
 
-## Step 1：載入 Facebook Session
+## Step 1：判斷平台並載入 Session
+
+根據 URL 判斷平台：
+
+- **facebook.com** → Facebook
+- **youtube.com** → YouTube
+- **其他** → 通用網頁
+
+### Facebook
 
 讀取 `~/.claude/social-scraper/playwright-auth/facebook.json`。
 
@@ -40,108 +44,92 @@ for (const origin of storageState.origins || []) {
 - `browser_navigate` → `https://www.facebook.com`
 - `browser_evaluate` 注入 localStorage 條目
 
----
-
-## Step 2：爬取 Facebook 目標
-
-對每個 `platform: "facebook"` 的 target 依序執行：
-
-### 2a. 導覽到目標頁面
-
-`browser_navigate` → target 的 `url`
-
-`browser_snapshot` 確認頁面已載入。
-
-**Session 過期偵測**：若頁面 URL 包含 `/login` 或快照中出現登入表單，立即停止並提示：
-> Facebook session 已過期，請說「刷新登入」重新登入後再試。
-
-### 2b. 依 type 抓取貼文
-
-**profile / page**：
-- 滾動頁面載入最新貼文
-- 找到 `[role="article"]` 或類似的貼文容器元素
-- `browser_snapshot` 擷取頁面結構
-
-**group**：
-- 導覽到社團 feed（`{url}?sorting_setting=CHRONOLOGICAL` 嘗試時序排序）
-- 找到貼文清單
-
-### 2c. 提取貼文資料
-
-對每篇貼文提取：
-- **作者**：發文者名稱
-- **時間**：發文時間（原始文字，如「3小時前」「昨天」或具體日期）
-- **內文**：貼文文字內容（若有「查看更多」則嘗試展開）
-- **連結**：貼文永久連結（`/posts/` 或 `?story_fbid=` 格式）
-- **媒體描述**：若有圖片/影片，描述其內容（使用截圖分析）
-
----
-
-## Step 3：載入 YouTube Session
+### YouTube
 
 讀取 `~/.claude/social-scraper/playwright-auth/youtube.json`。
 
 若檔案不存在，停止並提示：
 > YouTube session 不存在，請先說「初始化社群抓取」完成登入。
 
-注入 session（同 Step 1 的方式）。
+注入 session（同 Facebook 的方式）。
+
+### 通用網頁
+
+不需載入 session，直接進入 Step 2。
 
 ---
 
-## Step 4：爬取 YouTube 目標
+## Step 2：導覽並爬取內容
 
-對每個 `platform: "youtube"` 的 target 依序執行：
-
-### 4a. 導覽到頻道影片頁
-
-`browser_navigate` → `{target.url}/videos`
+`browser_navigate` → 使用者提供的 URL
 
 `browser_snapshot` 確認頁面已載入。
 
-**Session 過期偵測**：若頁面顯示登入提示，停止並提示：
-> YouTube session 已過期，請說「刷新登入」重新登入後再試。
+**Session 過期偵測**（僅限 Facebook/YouTube）：
+- Facebook：若頁面 URL 包含 `/login` 或快照中出現登入表單，停止並提示：
+  > Facebook session 已過期，請說「刷新登入」重新登入後再試。
+- YouTube：若頁面顯示登入提示，停止並提示：
+  > YouTube session 已過期，請說「刷新登入」重新登入後再試。
 
-### 4b. 提取影片清單
+### 根據平台提取內容
 
-從頁面快照中找到影片項目，提取：
+**Facebook 貼文頁面**：
+- **作者**：發文者名稱
+- **時間**：發文時間（原始文字，如「3小時前」「昨天」或具體日期）
+- **內文**：貼文文字內容（若有「查看更多」則嘗試展開）
+- **連結**：貼文永久連結（`/posts/` 或 `?story_fbid=` 格式）
+- **媒體描述**：若有圖片/影片，描述其內容（使用截圖分析）
+
+**YouTube 影片頁面**：
 - **標題**：影片標題
-- **URL**：`https://www.youtube.com/watch?v=...`
-- **發布時間**：原始文字（如「3小時前」「昨天」）
-- **描述摘要**：若頁面顯示摘要則納入
+- **發布時間**：原始文字
+- **描述**：影片描述內容
+- **頻道名稱**：上傳者名稱
+
+**通用網頁**：
+- **標題**：頁面標題（`<title>` 或主標題）
+- **主要內容**：頁面主要文字內容（排除導覽、側邊欄、頁尾等非核心區域）
+- **連結**：頁面中的重要連結
 
 ---
 
-## Step 5：回傳結果
+## Step 3：回傳結果
 
-將所有爬取結果整理為結構化 Markdown 輸出：
+將爬取結果整理為結構化 Markdown 輸出：
+
+### Facebook 貼文
 
 ```markdown
-# 社群內容抓取結果
+# 爬取結果：Facebook
 
-## Facebook
-
-### {target.name}（{target.type}）
-
-#### {作者} · {時間}
+## {作者} · {時間}
 {內文}
+
 [查看原文]({連結})
-
----
-
-## YouTube
-
-### {target.name}
-
-#### {標題}
-發布時間：{時間}
-{描述摘要}
-[觀看影片]({URL})
-
----
 ```
 
-若某個目標沒有找到任何內容，顯示：
-> {target.name}：目前沒有可抓取的內容（可能是頁面結構變更，或該帳號近期無更新）
+### YouTube 影片
 
-完成後告知使用者共抓取了多少篇 FB 貼文和多少部 YT 影片，並說明資料可供後續自行處理。
+```markdown
+# 爬取結果：YouTube
 
+## {標題}
+頻道：{頻道名稱}
+發布時間：{時間}
+
+{描述}
+
+[觀看影片]({URL})
+```
+
+### 通用網頁
+
+```markdown
+# 爬取結果：{標題}
+
+{主要內容}
+
+來源：{URL}
+```
+
+完成後告知使用者爬取完成，資料可供後續自行處理。

@@ -45,7 +45,7 @@ color: green
 4. **確認存放路徑**：`主題知識/[YYYY-MM-DD]/[標題].md`
    - 日期為當日（格式 `YYYY-MM-DD`）
    - 子資料夾不存在時動態建立
-5. **寫入筆記**（禁止使用 Write/Edit tool 寫入 vault 路徑，依照 obsidian-wsl-cli skill 的「標準呼叫命令」執行）
+5. **寫入筆記**（使用 obsidian CLI 寫入 vault；若為 WSL2 環境則改用 obsidian-wsl-cli skill 的「標準呼叫命令」）
 
 ## 筆記格式
 

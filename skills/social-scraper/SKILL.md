@@ -1,12 +1,13 @@
 ---
 name: social-scraper
 description: >
-  社群媒體內容爬取工具。從 Facebook、YouTube 等平台抓取最新貼文與影片，以結構化格式回傳給使用者。
+  社群媒體內容爬取工具。從 Facebook、YouTube 等平台抓取內容或收集追蹤目標的更新連結，以結構化格式回傳給使用者。
   抓取時機由使用者自行決定，plugin 不預設任何固定週期。
 
   觸發情境：
   - 使用者說「初始化社群抓取」「social scraper init」「設定 scraper」→ 執行初始化精靈
-  - 使用者說「抓取內容」「scrape」「抓一下」「幫我抓」→ 執行抓取
+  - 使用者說「抓取內容」「scrape」「抓一下」「幫我抓」並提供 URL → 爬取該 URL 內容
+  - 使用者說「抓取追蹤目標」「scrape targets」「收集連結」「collect links」「目標更新」「最近更新」→ 收集追蹤目標的更新連結
   - 使用者說「刷新登入」「refresh auth」「session 過期了」「重新登入」→ 刷新 session
   - 使用者說「管理追蹤目標」「新增目標」「刪除目標」「修改追蹤」「設定追蹤」→ 執行目標管理精靈
 category: automation
@@ -46,7 +47,8 @@ Playwright MCP plugin 必須已啟用。若尚未設定，請參考 `references/
 | 使用者意圖 | 執行檔案 |
 |-----------|---------|
 | 初始化、首次設定 | `commands/init.md` |
-| 抓取內容 | `commands/scrape.md` |
+| 抓取內容（提供 URL） | `commands/scrape.md` |
+| 抓取追蹤目標、收集連結、目標更新、最近更新 | `commands/scrape_target.md` |
 | 刷新登入、session 過期 | `commands/refresh-auth.md` |
 | 管理追蹤目標、新增/刪除/修改目標 | `commands/manage-targets.md` |
 
