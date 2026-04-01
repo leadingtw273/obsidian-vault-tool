@@ -16,8 +16,9 @@
 ## Step 1：建立使用者資料目錄
 
 ```bash
-mkdir -p ~/.claude/social-scraper/playwright-auth
 mkdir -p ~/.claude/social-scraper/config
+mkdir -p ~/.claude/social-scraper/learned
+mkdir -p ~/.claude/social-scraper/playwright-auth
 ```
 
 ---
@@ -56,7 +57,7 @@ YouTube 類型：
 }
 ```
 
-若使用者不確定格式，可參考 `config/targets.example.json`。
+若使用者不確定格式，可參考 `references/targets.example.json`。
 
 ---
 

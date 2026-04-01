@@ -36,6 +36,15 @@ allowed-tools:
 - **零外部腳本**：所有操作透過 Playwright MCP 工具完成，無需額外安裝 Node.js / Python 腳本
 - **長效 session**：登入一次可持續使用，只有 session 真正過期才需刷新
 
+## 經驗回饋
+
+每次爬取完成後，若發現平台特性（如 CSS 混淆、需要截圖才能讀取時間戳等），
+應將經驗記錄至 `~/.claude/social-scraper/learned/platform-notes.json`。
+
+後續爬取時應先讀取此檔案，依據平台特性選擇對應策略（例如 Facebook 需用截圖辨識時間戳，YouTube 可直接從 snapshot 讀取）。
+
+使用者資料目錄的完整結構定義請參考 `references/user-data-structure.md`。
+
 ## 使用前提
 
 Playwright MCP plugin 必須已啟用。若尚未設定，請參考 `references/mcp-setup.md`。

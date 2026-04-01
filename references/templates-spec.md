@@ -49,4 +49,4 @@ author:
 - 來源記錄的 `source` 填原始 URL 或對話識別資訊
 - 來源記錄的 `content_type` 填實際類型：`conversation` / `youtube` / `fb-post` / `article` / `pdf` / `webpage`
 - 知識筆記的 `category` 由 `tags[0]` 第一層動態決定（如 `技術/AI/LLM` → `技術`）
-- 知識筆記的 `source` 填 `[[來源記錄檔名]]`（由 archive 呼叫時）或原始 URL（standalone 時）
+- 知識筆記的 `source` 填 `"[[來源記錄檔名]]"`（由 archive 呼叫時）或原始 URL（standalone 時）

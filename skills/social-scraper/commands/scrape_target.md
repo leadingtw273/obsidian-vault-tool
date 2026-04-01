@@ -29,35 +29,47 @@
 
 ## Step 1：載入 Session
 
-### Facebook Session
+對每個需要的平台，使用 Bash 讀取 session 檔並處理 cookies，然後透過 `browser_run_code` 注入。
 
-若有 Facebook 目標，讀取 `~/.claude/social-scraper/playwright-auth/facebook.json`。
+### 通用流程（適用所有平台）
 
-若檔案不存在，停止並提示：
-> Facebook session 不存在，請先說「初始化社群抓取」完成登入。
+1. **檢查 session 檔是否存在**：
 
-透過 `browser_run_code` 注入 session（server-side Playwright）：
+```bash
+ls ~/.claude/social-scraper/playwright-auth/{platform}.json 2>/dev/null
+```
+
+若不存在，停止並提示：
+> {Platform} session 不存在，請先說「初始化社群抓取」完成登入。
+
+2. **用 Bash 讀取並清理 cookies**（避免使用 Read 工具，減少權限提示）：
+
+```bash
+cat ~/.claude/social-scraper/playwright-auth/{platform}.json | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+cookies = data.get('cookies', [])
+clean = [{k:v for k,v in c.items() if k not in ('partitionKey','_crHasCrossSiteAncestor')} for c in cookies]
+print(json.dumps(clean))
+"
+```
+
+3. **將 Bash 輸出的 cookies JSON 直接嵌入 `browser_run_code`**：
+
+若 cookies 數量較大（超過 20 個），可分批注入，每批直接嵌入 `browser_run_code` 呼叫中，**不需要寫入暫存檔或再次讀取**。
 
 ```javascript
-const storageState = /* facebook.json 的內容 */;
-await context.addCookies(storageState.cookies);
-for (const origin of storageState.origins || []) {
-  // 需導覽到該 origin 後再注入
+async (page) => {
+  const cookies = /* Bash 輸出的 JSON 直接貼入 */;
+  await page.context().addCookies(cookies);
+  return 'injected ' + cookies.length + ' cookies';
 }
 ```
 
-**若 browser_run_code 無法存取 context**（備援）：
-- `browser_navigate` → `https://www.facebook.com`
-- `browser_evaluate` 注入 localStorage 條目
+### Session 過期偵測
 
-### YouTube Session
-
-若有 YouTube 目標，讀取 `~/.claude/social-scraper/playwright-auth/youtube.json`。
-
-若檔案不存在，停止並提示：
-> YouTube session 不存在，請先說「初始化社群抓取」完成登入。
-
-注入 session（同 Facebook 的方式）。
+注入後導覽到目標頁面時，若頁面 URL 包含 `/login` 或快照中出現登入表單，立即停止並提示：
+> {Platform} session 已過期，請說「刷新登入」重新登入後再試。
 
 ---
 
@@ -150,3 +162,6 @@ for (const origin of storageState.origins || []) {
 > {target.name}：該時段無更新
 
 完成後告知使用者共收集了多少個連結（FB 貼文 N 篇、YT 影片 N 部），並說明這些連結可供後續使用 `scrape` 指令逐一爬取內容。
+
+> **自動銜接**：若使用者的原始請求包含歸檔意圖（如「歸檔」、「存起來」、「整理」、「記錄」），
+> 收集完連結後應直接對每個連結執行 archive 流程，不需額外確認。

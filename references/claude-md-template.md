@@ -63,7 +63,7 @@ obsidian_cli: obsidian
 | `title` | 筆記標題 |
 | `date` | 建立日期，格式 `YYYY-MM-DD` |
 | `tags` | 中文層級結構標籤，`tags[0]` 為完整路徑 |
-| `source` | `[[來源記錄檔名]]`（由 archive skill 呼叫時）或完整 URL（standalone 時） |
+| `source` | `"[[來源記錄檔名]]"`（由 archive skill 呼叫時）或完整 URL（standalone 時） |
 | `category` | 等於 `tags[0]` 第一層（動態） |
 | `content_type` | `article` / `youtube` / `pdf` / `fb-post` / `conversation` / `webpage` |
 | `author` | 原始作者 |
