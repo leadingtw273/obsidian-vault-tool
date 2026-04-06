@@ -15,7 +15,7 @@
 ## 維護者與更新時機
 
 - **維護者**：主對話（非 sub-agent，避免並行寫入衝突）
-- **更新方式**：`obsidian append path="index.md" content="\n[條目]"`
+- **更新方式**：`obsidian append vault=[vault_name] path="index.md" content="\n[條目]"`
 - **更新時機**：
   - archive 完成後（新建或更新主題頁後）
   - query skill 回填總覽頁後
@@ -71,5 +71,5 @@ index.md 隨 append 積累，同主題會出現多條記錄。lint skill 定期�
 
 使用 obsidian CLI 寫入：
 ```bash
-obsidian create path="index.md" content="# Wiki Index\n" vault=[vault_name]
+obsidian create vault=[vault_name] path="index.md" content="# Wiki Index\n"
 ```

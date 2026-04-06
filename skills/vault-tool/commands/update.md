@@ -110,8 +110,8 @@ author:
 
 使用 obsidian CLI 寫入（分別執行，`create` 不加 `overwrite`，已存在時 CLI 會略過或報錯，確認後略過即可）：
 ```
-obsidian create path="index.md" content="# Wiki Index\n" vault=[vault_name]
-obsidian create path="log.md" content="# Wiki Log\n\n<!-- append-only：只追加，不修改既有條目 -->\n<!-- 格式：## [YYYY-MM-DD HH:mm] [ingest|query|lint] | [標題] -->\n" vault=[vault_name]
+obsidian create vault=[vault_name] path="index.md" content="# Wiki Index\n"
+obsidian create vault=[vault_name] path="log.md" content="# Wiki Log\n\n<!-- append-only：只追加，不修改既有條目 -->\n<!-- 格式：## [YYYY-MM-DD HH:mm] [ingest|query|lint] | [標題] -->\n"
 ```
 
 ---

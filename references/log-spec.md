@@ -118,11 +118,11 @@ grep "^## \[2026-04-05" log.md
 ### 寫入命令（init 時）
 
 ```bash
-obsidian create path="log.md" content="# Wiki Log\n\n<!-- append-only：只追加，不修改既有條目 -->\n<!-- 格式：## [YYYY-MM-DD HH:mm] [ingest|query|lint] | [標題] -->\n" vault=[vault_name]
+obsidian create vault=[vault_name] path="log.md" content="# Wiki Log\n\n<!-- append-only：只追加，不修改既有條目 -->\n<!-- 格式：## [YYYY-MM-DD HH:mm] [ingest|query|lint] | [標題] -->\n"
 ```
 
 ### 追加條目命令（archive / query / lint 後）
 
 ```bash
-obsidian append path="log.md" content="## [YYYY-MM-DD HH:mm] ingest | [來源標題]\n- record: [[歷史紀錄/...]]\n- new: [[主題知識/...]]\n" vault=[vault_name]
+obsidian append vault=[vault_name] path="log.md" content="## [YYYY-MM-DD HH:mm] ingest | [來源標題]\n- record: [[歷史紀錄/...]]\n- new: [[主題知識/...]]\n"
 ```

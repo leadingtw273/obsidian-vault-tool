@@ -129,7 +129,7 @@ obsidian_cli: obsidian
 
 本 Vault 的寫入操作分為兩套管道：
 
-- **管道 1（obsidian CLI）**：日常歸檔操作（archive / wiki-writer / query）使用 `create`、`append`、`property:set` 等官方 CLI 命令
+- **管道 1（obsidian CLI）**：日常歸檔操作（archive / wiki-writer / query）使用 `create`、`append`、`eval + processFrontMatter` 等官方 CLI 命令（property:set 在 Obsidian 1.12.7 有 bug，已停用）
 - **管道 2（Claude Code Read/Edit/Write）**：lint 維護操作使用原生工具做正文修補
 
 詳細規格見 `references/cli-usage.md`。

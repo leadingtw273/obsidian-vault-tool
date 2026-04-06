@@ -22,7 +22,7 @@ allowed-tools: ["Read", "Glob", "Grep", "Bash"]
 
 ## 執行步驟
 
-1. **收集既有標籤**：`obsidian tags counts format=json`（失敗則略過）
+1. **收集既有標籤**：`obsidian tags vault=[vault_name] counts`（失敗則略過）
 2. **分析筆記**：從標題、摘要、正文提取候選主題詞
 3. **匹配建議**：優先用既有標籤，避免碎片化；新標籤需確認未來會重複出現
 4. **輸出建議表格**：

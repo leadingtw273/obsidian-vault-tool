@@ -59,7 +59,7 @@ grep frontmatter aliases: 陣列中是否包含本標題
 ### Level 4：反向連結匹配
 
 ```
-obsidian search "[[新標題]]"
+obsidian search vault=[vault_name] query="[[新標題]]"
 ```
 
 - 搜尋 Vault 中已有哪些頁面在正文用 `[[新標題]]` 引用了本主題

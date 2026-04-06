@@ -69,7 +69,7 @@ raw_file_path：[絕對路徑]
 對每個 Step 1 成功的 raw 檔，使用 `obsidian append` 直接追加 record-only 類型的 ingest 條目：
 
 ```bash
-obsidian append path="log.md" content="\n## [YYYY-MM-DD HH:mm] ingest | [來源標題] (record-only)\n- record: [[歷史紀錄/[type]/[YYYY-MM-DD]/[序號]_[概述]]]" vault=[vault_name]
+obsidian append vault=[vault_name] path="log.md" content="\n## [YYYY-MM-DD HH:mm] ingest | [來源標題] (record-only)\n- record: [[歷史紀錄/[type]/[YYYY-MM-DD]/[序號]_[概述]]]"
 ```
 
 **時間戳記**：執行 `date '+%Y-%m-%d %H:%M'` 取得當前本地時間。

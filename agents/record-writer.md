@@ -74,7 +74,7 @@ raw 檔：[raw 檔絕對路徑]
 若 `source` 為 URL 類型（含 `http://` 或 `https://`）：
 
 ```bash
-obsidian search query="<source URL>" vault=<vault_name>
+obsidian search vault=<vault_name> query="<source URL>"
 ```
 
 若搜尋結果含 `歷史紀錄/` 路徑下的檔案 → 輸出下方提示後終止（非熔斷，為友善跳過）：
@@ -118,19 +118,19 @@ raw 檔：[raw 檔絕對路徑]
 CLI 安全規則見 `${CLAUDE_PLUGIN_ROOT}/references/cli-usage.md`（content= 安全規則章節）。重點：
 - 換行用 `\n`
 - `"` 用 `\"`，反引號用 `` \` ``，`$` 用 `\$`
-- 單次 content= 不超過 4KB（約 1500 中文字）
+- 單次 content= 建議不超過 16KB
 
-若總字數在 4KB 以內，一次 create 寫入完整 frontmatter + 總結 + 反向連結：
+一次 create 寫入完整 frontmatter + 總結 + 反向連結：
 
 ```bash
-obsidian create path="歷史紀錄/[類型目錄]/[YYYY-MM-DD]/[序號]_[概述].md" content="---\ntitle: [標題]\ndate: [YYYY-MM-DD]\nsource: [URL]\ncategory: 來源紀錄\ncontent_type: [type]\nauthor: [作者]\n---\n\n## 總結\n\n[總結內容]\n\n---\n\n> 原始內容見 [[raw/archived/[原始檔名]]]" vault=[vault_name]
+obsidian create vault=[vault_name] path="歷史紀錄/[類型目錄]/[YYYY-MM-DD]/[序號]_[概述].md" content="---\ntitle: [標題]\ndate: [YYYY-MM-DD]\nsource: [URL]\ncategory: 來源紀錄\ncontent_type: [type]\nauthor: [作者]\n---\n\n## 總結\n\n[總結內容]\n\n---\n\n> 原始內容見 [[raw/archived/[原始檔名]]]"
 ```
 
-若摘要字數接近 4KB 上限，先 create 含 frontmatter 的初始內容，再 append 摘要段落：
+若摘要字數超長，先 create 含 frontmatter 的初始內容，再 append 摘要段落：
 
 ```bash
-obsidian create path="歷史紀錄/[類型目錄]/[YYYY-MM-DD]/[序號]_[概述].md" content="---\ntitle: [標題]\ndate: [YYYY-MM-DD]\nsource: [URL]\ncategory: 來源紀錄\ncontent_type: [type]\nauthor: [作者]\n---\n\n## 總結\n\n[前半段摘要]" vault=[vault_name]
-obsidian append path="歷史紀錄/[類型目錄]/[YYYY-MM-DD]/[序號]_[概述].md" content="\n[後半段摘要]\n\n---\n\n> 原始內容見 [[raw/archived/[原始檔名]]]" vault=[vault_name]
+obsidian create vault=[vault_name] path="歷史紀錄/[類型目錄]/[YYYY-MM-DD]/[序號]_[概述].md" content="---\ntitle: [標題]\ndate: [YYYY-MM-DD]\nsource: [URL]\ncategory: 來源紀錄\ncontent_type: [type]\nauthor: [作者]\n---\n\n## 總結\n\n[前半段摘要]"
+obsidian append vault=[vault_name] path="歷史紀錄/[類型目錄]/[YYYY-MM-DD]/[序號]_[概述].md" content="\n[後半段摘要]\n\n---\n\n> 原始內容見 [[raw/archived/[原始檔名]]]"
 ```
 
 若 obsidian CLI 失敗，最多重試 3 次，每次前宣告狀態：

@@ -47,7 +47,7 @@ Read [vault_path]/index.md
 使用 obsidian search 作為 index.md 的補強，捕捉摘要未能反映的頁面：
 
 ```bash
-obsidian search query="[問題關鍵詞]" vault=[vault_name]
+obsidian search vault=[vault_name] query="[問題關鍵詞]"
 ```
 
 - 從問題中提取 1-3 個核心關鍵詞執行搜尋（若問題含多個概念，可分多次搜尋）
@@ -191,13 +191,13 @@ date '+%Y-%m-%d %H:%M'
 **若有回填 Wiki**（`[回填狀態]` 為已寫入），使用 obsidian CLI append：
 
 ```
-obsidian append path="log.md" content="\n## [YYYY-MM-DD HH:mm] query | [問題摘要]\n- 讀取頁面：[[主題A]], [[主題B]], ...\n- 結論：寫回 [[主題知識/總覽/[標題]]]" vault=[vault_name]
+obsidian append vault=[vault_name] path="log.md" content="\n## [YYYY-MM-DD HH:mm] query | [問題摘要]\n- 讀取頁面：[[主題A]], [[主題B]], ...\n- 結論：寫回 [[主題知識/總覽/[標題]]]"
 ```
 
 **若僅回覆對話**（`[回填狀態]` 為未回填）：
 
 ```
-obsidian append path="log.md" content="\n## [YYYY-MM-DD HH:mm] query | [問題摘要]\n- 讀取頁面：[[主題A]], [[主題B]], ...\n- 結論：僅回覆對話，未寫入 Wiki" vault=[vault_name]
+obsidian append vault=[vault_name] path="log.md" content="\n## [YYYY-MM-DD HH:mm] query | [問題摘要]\n- 讀取頁面：[[主題A]], [[主題B]], ...\n- 結論：僅回覆對話，未寫入 Wiki"
 ```
 
 > 注意：`content=` 中的 `[[` 和 `]]` 無需跳脫，但 `"` 需以 `\"` 跳脫。實際執行時將佔位符替換為真實內容。
@@ -214,13 +214,13 @@ obsidian append path="log.md" content="\n## [YYYY-MM-DD HH:mm] query | [問題�
 
 - **新建頁**：
   ```
-  obsidian append path="index.md" content="\n[YYYY-MM-DD] [[主題知識/總覽/[標題]|[標題]]] — [一行摘要（50 字以內）]（sources: N）[new]" vault=[vault_name]
+  obsidian append vault=[vault_name] path="index.md" content="\n[YYYY-MM-DD] [[主題知識/總覽/[標題]|[標題]]] — [一行摘要（50 字以內）]（sources: N）[new]"
   ```
   摘要從 `[綜合回答]` 首段萃取；`N` 為本次參考頁面數量。
 
 - **upsert 既有頁**：
   ```
-  obsidian append path="index.md" content="\n[YYYY-MM-DD] [[主題知識/總覽/[標題]|[標題]]] — [一行摘要（50 字以內）]（sources: N）[updated]" vault=[vault_name]
+  obsidian append vault=[vault_name] path="index.md" content="\n[YYYY-MM-DD] [[主題知識/總覽/[標題]|[標題]]] — [一行摘要（50 字以內）]（sources: N）[updated]"
   ```
 
 > 注意：index.md 採 append-only 語意，同主題可能出現多條記錄，由 lint skill 定期清理去重。index.md 由主對話串行更新，不委派 sub-agent，避免並行寫入衝突。
@@ -262,5 +262,5 @@ index.md：[未更新 / 已更新（新增 1 個總覽條目 / 更新既有條�
 
 1. Step 4 的「來源嚴格性」不是在 LLM 推斷時完全禁止使用訓練知識，而是要求**所有事實主張都有 wiki 頁面作為引用依據**。當 wiki 資訊不足時，須明確標記「以下為一般知識補充」，不允許隱性混入訓練知識。
 2. Step 6 傳入 wiki-writer 的 prompt 中，需明確指出「Step 1 取得原文時：使用傳入的原文內容」，因為 wiki-writer 的 Step 1 有兩個分支，此為 knowledge-only 模式（無來源記錄路徑）。
-3. Step 7 與 Step 8 使用 `obsidian append`（管道 1）。content= 超過 4KB 需分段 append，詳見 `references/cli-usage.md`。
+3. Step 7 與 Step 8 使用 `obsidian append`（管道 1）。content= 超過 16KB 需分段 append，詳見 `references/cli-usage.md`。
 4. 主對話負責 Step 0-5、7、8、9；只有 Step 6 委派 wiki-writer agent。

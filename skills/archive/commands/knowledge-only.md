@@ -124,7 +124,7 @@ Agent tool，`subagent_type: "obsidian-vault-tool:wiki-writer"`。
 對本次所有寫入的知識筆記（新建 + merge，驗證通過者），對每個主題使用 `obsidian append` 追加一行條目：
 
 ```bash
-obsidian append path="index.md" content="\n[YYYY-MM-DD] [[主題知識/[類別]/[標題]|[標題]]] — [一行摘要]（sources: N）[new]" vault=[vault_name]
+obsidian append vault=[vault_name] path="index.md" content="\n[YYYY-MM-DD] [[主題知識/[類別]/[標題]|[標題]]] — [一行摘要]（sources: N）[new]"
 ```
 
 - **新建主題**：末尾標記 `[new]`
@@ -145,7 +145,7 @@ obsidian append path="index.md" content="\n[YYYY-MM-DD] [[主題知識/[類別]/
 使用 `obsidian append` 直接追加 knowledge-only 類型的 ingest 條目：
 
 ```bash
-obsidian append path="log.md" content="\n## [YYYY-MM-DD HH:mm] ingest | [來源標題] (knowledge-only)\n- new: [[主題知識/[類別]/主題A]], [[主題知識/[類別]/主題B]]\n- updated: [[主題知識/[類別]/主題C]]" vault=[vault_name]
+obsidian append vault=[vault_name] path="log.md" content="\n## [YYYY-MM-DD HH:mm] ingest | [來源標題] (knowledge-only)\n- new: [[主題知識/[類別]/主題A]], [[主題知識/[類別]/主題B]]\n- updated: [[主題知識/[類別]/主題C]]"
 ```
 
 **時間戳記**：執行 `date '+%Y-%m-%d %H:%M'` 取得當前本地時間。

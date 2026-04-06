@@ -58,22 +58,26 @@ Wiki 為空，主題知識/ 下尚無任何頁面，無需 lint。
 
 **執行流程**：
 
-對 `pages[]` 中的每個頁面（標題為 `T`）：
+使用原生 CLI 命令一次取得所有孤兒頁：
+
+```bash
+obsidian orphans vault=[vault_name]
+```
+
+從結果中篩選 `主題知識/` 路徑下的頁面（CLI 結果可能包含 vault 全部無反向連結的檔案）。
+
+若需要更精細的篩選（例如排除 index.md 中的引用不算有效引用），可對候選孤兒頁逐一補充 Grep 驗證：
 
 ```
 Grep 工具：
   pattern: \[\[.*T.*\]\]
   path: [vault_path]
-  glob: **/*.md
+  glob: **/*.md（排除 index.md）
   output_mode: files_with_matches
 ```
 
-（採用正則搜尋，涵蓋 `[[T]]`、`[[主題知識/實體/T|T]]` 等各種形式）
-
-從結果中排除本頁自身的路徑。若排除後結果為空 → 該頁為孤兒頁。
-
 **注意事項**：
-- 同時搜尋 `aliases` 中的別名（若存在），只要有任何形式的引用即不計為孤兒
+- 同時確認 `aliases` 中的別名是否有引用（若 CLI 結果已納入 aliases 引用則無需額外 Grep）
 - index.md 中的引用**不算**有效引用（index.md 是目錄，非語意連結）
 
 **記錄**：將孤兒頁路徑存入 `orphans[]`。
@@ -107,6 +111,14 @@ Grep 工具：
 - HTML 注釋 `<!-- ... -->` 內
 
 **記錄**：將命中結果存入 `missing_xref[]`，格式 `(page_path, mentioned_topic, suggested_wikilink)`。每個 (page, topic) 組合只記錄一次（不重複計算同頁多次提到）。
+
+**補充交叉驗證**（選用）：掃描完成後，可用 CLI 命令取得所有未解決 wikilink，與 `missing_xref[]` 對比：
+
+```bash
+obsidian unresolved vault=[vault_name]
+```
+
+若 `unresolved` 回報的 wikilink 目標在 `pages[]` 中存在對應頁面，表示該連結格式有誤（路徑拼錯或分類有誤），需人工修正。
 
 ---
 
@@ -207,6 +219,8 @@ Grep 工具：
      Glob 工具：[vault_path]/[條目路徑].md
      ```
    - 若找不到 → 存入 `index_stale[]`
+
+   > 取得實際檔案列表的替代方法：`obsidian files vault=[vault_name] folder="主題知識"` 可直接列出 `主題知識/` 下所有檔案，與 `index_entries[]` 比對效率更高。
 
    **c. index 分類錯誤**（index 中的 wiki_category 與實際目錄不一致）：
    - 對 `index_entries[]` 中每個條目，比對：
@@ -382,14 +396,14 @@ date '+%Y-%m-%d %H:%M'
 **Append 方法**：使用 obsidian CLI append 直接追加至 log.md：
 
 ```
-obsidian append path="log.md" content="\n## [YYYY-MM-DD HH:mm] lint | manual\n- 掃描頁面：N\n- 孤兒頁面：[[主題知識/實體/XXX]], [[主題知識/概念/YYY]]\n- 矛盾：[[主題知識/概念/AAA]] 2 處\n- 缺失交叉引用：N 處\n- index 問題：N 個（遺漏 M + 過期 K + 錯誤 L）\n- 整體健康度：[評級]" vault=[vault_name]
+obsidian append vault=[vault_name] path="log.md" content="\n## [YYYY-MM-DD HH:mm] lint | manual\n- 掃描頁面：N\n- 孤兒頁面：[[主題知識/實體/XXX]], [[主題知識/概念/YYY]]\n- 矛盾：[[主題知識/概念/AAA]] 2 處\n- 缺失交叉引用：N 處\n- index 問題：N 個（遺漏 M + 過期 K + 錯誤 L）\n- 整體健康度：[評級]"
 ```
 
-> 注意：實際執行時將佔位符替換為真實數值；若某項目為 0 則省略該行，直接拼接其他行。`\"` 跳脫雙引號，若 content= 超過 4KB 則分多次 append。
+> 注意：實際執行時將佔位符替換為真實數值；若某項目為 0 則省略該行，直接拼接其他行。`\"` 跳脫雙引號，若 content= 超過 16KB 則分多次 append。
 
 若 `log.md` 不存在，先建立再追加：
 ```
-obsidian create path="log.md" content="# Wiki Log\n\n<!-- append-only：只追加，不修改既有條目 -->\n<!-- 格式：## [YYYY-MM-DD HH:mm] [ingest|query|lint] | [標題] -->\n" vault=[vault_name]
+obsidian create vault=[vault_name] path="log.md" content="# Wiki Log\n\n<!-- append-only：只追加，不修改既有條目 -->\n<!-- 格式：## [YYYY-MM-DD HH:mm] [ingest|query|lint] | [標題] -->\n"
 ```
 建立後再執行上方的 append 命令。
 

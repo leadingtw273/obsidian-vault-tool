@@ -152,14 +152,14 @@ author:
 
 使用 obsidian CLI 寫入：
 ```
-obsidian create path="index.md" content="# Wiki Index\n" vault=[vault_name]
+obsidian create vault=[vault_name] path="index.md" content="# Wiki Index\n"
 ```
 
 **`log.md`**（時間軸日誌空白範本）：
 
 使用 obsidian CLI 寫入：
 ```
-obsidian create path="log.md" content="# Wiki Log\n\n<!-- append-only：只追加，不修改既有條目 -->\n<!-- 格式：## [YYYY-MM-DD HH:mm] [ingest|query|lint] | [標題] -->\n" vault=[vault_name]
+obsidian create vault=[vault_name] path="log.md" content="# Wiki Log\n\n<!-- append-only：只追加，不修改既有條目 -->\n<!-- 格式：## [YYYY-MM-DD HH:mm] [ingest|query|lint] | [標題] -->\n"
 ```
 
 ### 步驟 4-3：生成 CLAUDE.md
@@ -247,6 +247,9 @@ vault_path_windows: [vault_path_windows]
 
 > 若尚未安裝 Obsidian 應用程式，請至 https://obsidian.md 下載安裝。
 > 安裝後，在 Obsidian 中選擇「開啟資料夾作為 Vault」，選取 `[vault_path]` 即可使用。
+
+> ⚠️ Vault 必須在 Obsidian 中開啟後，CLI 命令才能正常操作。
+> 請確認已在 Obsidian 中選擇「開啟資料夾作為 Vault」，並在 `obsidian vaults` 中確認 vault 已列出。
 
 ---
 

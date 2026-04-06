@@ -84,7 +84,7 @@ Grep 工具：在 主題知識/*/*.md 的 frontmatter 中找 aliases 陣列含�
 **Level 4：反向連結匹配**
 
 ```bash
-obsidian search query="[[主題標題]]" vault=[vault_name]
+obsidian search vault=[vault_name] query="[[主題標題]]"
 ```
 
 分析結果，若有頁面正文引用了 `[[主題標題]]` → Read 被引用頁確認是否為同主題主頁，命中則確定為 upsert 目標。
@@ -133,30 +133,30 @@ obsidian search query="[[主題標題]]" vault=[vault_name]
 
 CLI 安全規則見 `${CLAUDE_PLUGIN_ROOT}/references/cli-usage.md`（content= 安全規則章節）。
 
-若正文 ≤ 4KB（約 1500 中文字），一次 create 寫入完整 frontmatter + 正文：
+一次 create 寫入完整 frontmatter + 正文：
 
 ```bash
-obsidian create path="主題知識/[wiki_category]/[主題標題].md" content="---\ntitle: [主題標題]\ndate: [YYYY-MM-DD]\nupdated: [YYYY-MM-DD]\ntags:\n  - [層級結構標籤]\n  - [展開標籤...]\naliases: []\nsources:\n  - \"[[來源記錄檔名]]\"\ncategory: [tags[0] 第一層]\nwiki_category: [實體/概念/比較/總覽]\ncontent_type: [type]\nauthor: [作者]\n---\n\n[正文內容]" vault=[vault_name]
+obsidian create vault=[vault_name] path="主題知識/[wiki_category]/[主題標題].md" content="---\ntitle: [主題標題]\ndate: [YYYY-MM-DD]\nupdated: [YYYY-MM-DD]\ntags:\n  - [層級結構標籤]\n  - [展開標籤...]\naliases: []\nsources:\n  - \"[[來源記錄檔名]]\"\ncategory: [tags[0] 第一層]\nwiki_category: [實體/概念/比較/總覽]\ncontent_type: [type]\nauthor: [作者]\n---\n\n[正文內容]"
 ```
 
-若正文 > 4KB，先 create 含 frontmatter + 前段正文，再分段 append 剩餘：
+若正文超長（> 16KB），先 create 含 frontmatter + 前段正文，再分段 append 剩餘：
 
 ```bash
-obsidian create path="主題知識/[wiki_category]/[主題標題].md" content="---\ntitle: ...\n...\n---\n\n[前段正文]" vault=[vault_name]
-obsidian append path="主題知識/[wiki_category]/[主題標題].md" content="[中段正文]" vault=[vault_name]
-obsidian append path="主題知識/[wiki_category]/[主題標題].md" content="[後段正文]" vault=[vault_name]
+obsidian create vault=[vault_name] path="主題知識/[wiki_category]/[主題標題].md" content="---\ntitle: ...\n...\n---\n\n[前段正文]"
+obsidian append vault=[vault_name] path="主題知識/[wiki_category]/[主題標題].md" content="[中段正文]"
+obsidian append vault=[vault_name] path="主題知識/[wiki_category]/[主題標題].md" content="[後段正文]"
 ```
 
 **B. 有既有頁 → merge 流程（增量操作）**
 
-不覆寫既有檔案，改為增量追加與 property:set 更新。
+不覆寫既有檔案，改為增量追加與 eval 更新 frontmatter。
 
 1. **Read 既有頁完整內容**（用 Read 工具，不走 CLI）
 2. **比對草稿與既有正文**：僅萃取既有內容尚未涵蓋的要點，跳過語意重複的內容
 3. **追加補充段落**（用 `obsidian append`）：
 
    ```bash
-   obsidian append path="主題知識/[wiki_category]/[主題標題].md" content="\n## 補充（YYYY-MM-DD 來自 [[來源記錄檔名]]）\n\n[補充重點，不重複既有內容]" vault=[vault_name]
+   obsidian append vault=[vault_name] path="主題知識/[wiki_category]/[主題標題].md" content="\n## 補充（YYYY-MM-DD 來自 [[來源記錄檔名]]）\n\n[補充重點，不重複既有內容]"
    ```
 
    若新來源完全無新資訊，補充段落寫：`（本次來源未帶來額外新資訊）`
@@ -164,31 +164,31 @@ obsidian append path="主題知識/[wiki_category]/[主題標題].md" content="[
 4. **矛盾偵測**：若發現新內容與既有內容直接矛盾（如數據、日期、事實陳述相反），追加到尾端：
 
    ```bash
-   obsidian append path="主題知識/[wiki_category]/[主題標題].md" content="\n> [!warning] 矛盾註記（YYYY-MM-DD）\n> 新來源 [[來源記錄檔名]] 提到：[新說法]\n> 既有內容提到：[舊說法]\n> 待人工確認。" vault=[vault_name]
+   obsidian append vault=[vault_name] path="主題知識/[wiki_category]/[主題標題].md" content="\n> [!warning] 矛盾註記（YYYY-MM-DD）\n> 新來源 [[來源記錄檔名]] 提到：[新說法]\n> 既有內容提到：[舊說法]\n> 待人工確認。"
    ```
 
-5. **更新 frontmatter 欄位**（用 `property:set`）：
+5. **更新 frontmatter 欄位**（用 `eval + processFrontMatter`，property:set 在 Obsidian 1.12.7 有 bug）：
 
    ```bash
    # 更新 updated 日期
-   obsidian property:set path="主題知識/[wiki_category]/[主題標題].md" name=updated value=[YYYY-MM-DD] type=date vault=[vault_name]
+   obsidian eval vault=[vault_name] code="app.fileManager.processFrontMatter(app.vault.getAbstractFileByPath('主題知識/[wiki_category]/[主題標題].md'), fm => { fm.updated = '[YYYY-MM-DD]'; })"
 
    # 更新 sources 陣列（先讀取現有值 → 合併去重 → 覆寫）
    # Step 5B-5a：用 Read 工具讀取既有頁 frontmatter，取得現有 sources 陣列
    # Step 5B-5b：將新來源 "[[來源記錄檔名]]" 加入陣列，去重後合併
-   # Step 5B-5c：用 property:set 寫回（type=list，逗號分隔，wikilink 需含雙引號）
-   obsidian property:set path="主題知識/[wiki_category]/[主題標題].md" name=sources value="\"[[001_舊來源]]\",\"[[002_新來源]]\"" type=list vault=[vault_name]
+   # Step 5B-5c：用 eval 寫回（陣列元素用單引號，wikilink 含 [[...]]）
+   obsidian eval vault=[vault_name] code="app.fileManager.processFrontMatter(app.vault.getAbstractFileByPath('主題知識/[wiki_category]/[主題標題].md'), fm => { fm.sources = ['[[001_舊來源]]','[[002_新來源]]']; })"
 
    # 更新 aliases 陣列（若本次來源使用了新稱呼）
    # 同上：先讀現有 aliases → 合併去重 → 覆寫
-   obsidian property:set path="主題知識/[wiki_category]/[主題標題].md" name=aliases value="別名1,別名2" type=list vault=[vault_name]
+   obsidian eval vault=[vault_name] code="app.fileManager.processFrontMatter(app.vault.getAbstractFileByPath('主題知識/[wiki_category]/[主題標題].md'), fm => { fm.aliases = ['別名1','別名2']; })"
    ```
 
 6. **tags 更新**（若新來源引入有意義的新 tags）：
 
    ```bash
    # 同上：讀現有 tags → 合併去重（超過 10 個時優先保留層級結構標籤） → 覆寫
-   obsidian property:set path="主題知識/[wiki_category]/[主題標題].md" name=tags value="技術/AI/LLM,技術,AI,LLM,RAG" type=list vault=[vault_name]
+   obsidian eval vault=[vault_name] code="app.fileManager.processFrontMatter(app.vault.getAbstractFileByPath('主題知識/[wiki_category]/[主題標題].md'), fm => { fm.tags = ['技術/AI/LLM','技術','AI','LLM','RAG']; })"
    ```
 
 7. **不修改**：`date`（首次建立日期）、`content_type`（首次類型）、`author`（首次作者）
@@ -232,7 +232,7 @@ Glob 工具：主題知識/*/*.md
 - `tags[0]`：層級結構標籤（如 `技術/AI/LLM`），決定 `category`（取第一層）
 - 接著展開各層為平坦標籤（如 `技術`、`AI`、`LLM`）
 - 再加 2-5 個描述標籤（關鍵詞、工具名，英文用 PascalCase）
-- 優先復用 vault 既有標籤（可用 `obsidian tags counts vault=[vault_name]` 查詢）
+- 優先復用 vault 既有標籤（可用 `obsidian tags vault=[vault_name] counts` 查詢）
 
 merge 模式下：與既有 tags 合併去重，超額時優先保留層級結構標籤與拆解標籤。
 
@@ -241,14 +241,14 @@ merge 模式下：與既有 tags 合併去重，超額時優先保留層級結�
 **路徑**：`主題知識/[wiki_category]/[主題標題].md`
 - 同名異物時路徑為 `主題知識/[wiki_category]/[主題標題] ([分類詞]).md`
 
-**新建模式**：依 Step 5A 的流程執行 `obsidian create`（可搭配 `obsidian append` 處理超過 4KB 的正文）。Step 5A 已包含完整 CLI 命令，本 Step 不重複。
+**新建模式**：依 Step 5A 的流程執行 `obsidian create`（可搭配 `obsidian append` 處理超長正文）。Step 5A 已包含完整 CLI 命令，本 Step 不重複。
 
-**merge 模式**：Step 5B 已透過 `obsidian append` + `property:set` 完成所有增量寫入。本 Step 無需額外操作，僅需確認 Step 5B 各子步驟已全部執行完成：
+**merge 模式**：Step 5B 已透過 `obsidian append` + `eval + processFrontMatter` 完成所有增量寫入。本 Step 無需額外操作，僅需確認 Step 5B 各子步驟已全部執行完成：
 - ☑ append 補充段落（或矛盾註記）
-- ☑ property:set updated
-- ☑ property:set sources（讀→合併去重→寫回）
-- ☑ property:set aliases（若有新稱呼）
-- ☑ property:set tags（若有新 tags）
+- ☑ eval 更新 updated
+- ☑ eval 更新 sources（讀→合併去重→寫回）
+- ☑ eval 更新 aliases（若有新稱呼）
+- ☑ eval 更新 tags（若有新 tags）
 
 **筆記格式**（10 欄位 frontmatter）：
 
@@ -296,7 +296,7 @@ author: [首次作者]
 **新建模式失敗**：刪除檔案並重新執行 Step 5A 寫入。
 
 **merge 模式失敗**：不需刪除整檔（因 merge 是增量操作）。視失敗項目決定重試行為：
-- frontmatter 欄位格式錯誤（項目 3-6）→ 重新執行對應的 `property:set` 命令
+- frontmatter 欄位格式錯誤（項目 3-6）→ 重新執行對應的 `eval + processFrontMatter` 命令
 - frontmatter 結構損毀（項目 1-2）→ 視為工具層問題，輸出熔斷通知
 
 #### 驗證重試熔斷規則

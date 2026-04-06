@@ -106,18 +106,18 @@ content_type: conversation
 
 使用以下命令建立 raw 檔（`[TIMESTAMP]` 替換為實際時間戳記）：
 
-對話內容通常超過 4KB，須分段寫入：
+對話內容可能較長，須分段寫入：
 
 ```bash
-# 先 create 含 frontmatter + 對話開頭部分（不超過 4KB）
-obsidian create path="raw/conversation-[TIMESTAMP].md" content="---\ntitle: [對話摘要]\ndate: [YYYY-MM-DD]\nauthor: [使用者稱呼]\nsource: conversation-[TIMESTAMP]\ncontent_type: conversation\n---\n\n## 對話內容\n\n[前段對話，確保整體不超過 4KB]" vault=[vault_name]
+# 先 create 含 frontmatter + 對話開頭部分（不超過 16KB）
+obsidian create vault=[vault_name] path="raw/conversation-[TIMESTAMP].md" content="---\ntitle: [對話摘要]\ndate: [YYYY-MM-DD]\nauthor: [使用者稱呼]\nsource: conversation-[TIMESTAMP]\ncontent_type: conversation\n---\n\n## 對話內容\n\n[前段對話]"
 
-# 若有剩餘對話內容，分段 append（每段不超過 4KB）
-obsidian append path="raw/conversation-[TIMESTAMP].md" content="\n[中段對話]" vault=[vault_name]
-obsidian append path="raw/conversation-[TIMESTAMP].md" content="\n[後段對話]" vault=[vault_name]
+# 若有剩餘對話內容，分段 append
+obsidian append vault=[vault_name] path="raw/conversation-[TIMESTAMP].md" content="\n[中段對話]"
+obsidian append vault=[vault_name] path="raw/conversation-[TIMESTAMP].md" content="\n[後段對話]"
 ```
 
-> 說明：content= 單次上限為 4KB（約 1500 中文字）。超過上限時，先 create 寫入前段，再分段 append 剩餘部分。換行使用 `\n`，雙引號使用 `\"`，反引號使用 `` \` ``，美元符號使用 `\$`。
+> 說明：content= 單次建議不超過 16KB。超過時，先 create 寫入前段，再分段 append 剩餘部分。換行使用 `\n`，雙引號使用 `\"`，反引號使用 `` \` ``，美元符號使用 `\$`。
 
 ### -1.7 確認並繼續
 
@@ -283,7 +283,7 @@ Agent tool，`subagent_type: "obsidian-vault-tool:wiki-writer"`。
 對本次所有寫入的知識筆記（新建 + merge，驗證通過者），對每個主題使用 `obsidian append` 追加一行條目：
 
 ```bash
-obsidian append path="index.md" content="\n[YYYY-MM-DD] [[主題知識/[類別]/[標題]|[標題]]] — [一行摘要]（sources: N）[new]" vault=[vault_name]
+obsidian append vault=[vault_name] path="index.md" content="\n[YYYY-MM-DD] [[主題知識/[類別]/[標題]|[標題]]] — [一行摘要]（sources: N）[new]"
 ```
 
 - **新建主題**：末尾標記 `[new]`
@@ -309,7 +309,7 @@ obsidian append path="index.md" content="\n[YYYY-MM-DD] [[主題知識/[類別]/
 **Append 方法**：直接 append，不需讀取整檔再寫回。
 
 ```bash
-obsidian append path="log.md" content="\n## [YYYY-MM-DD HH:mm] ingest | [來源標題]\n- record: [[歷史紀錄/[type]/[YYYY-MM-DD]/[序號]_[概述]]]\n- new: [[主題知識/[類別]/主題A]], [[主題知識/[類別]/主題B]]\n- updated: [[主題知識/[類別]/主題C]]" vault=[vault_name]
+obsidian append vault=[vault_name] path="log.md" content="\n## [YYYY-MM-DD HH:mm] ingest | [來源標題]\n- record: [[歷史紀錄/[type]/[YYYY-MM-DD]/[序號]_[概述]]]\n- new: [[主題知識/[類別]/主題A]], [[主題知識/[類別]/主題B]]\n- updated: [[主題知識/[類別]/主題C]]"
 ```
 
 若無新建主題則省略 `- new:` 行；若無更新主題則省略 `- updated:` 行。
