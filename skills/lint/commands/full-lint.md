@@ -189,7 +189,8 @@ Grep 工具：
 
 1. 使用 Read 工具讀取 `[vault_path]/index.md` 完整內容
 2. 解析 index.md 中的所有條目：
-   - 以 `- [[主題知識/` 開頭的行為條目行
+   - 以 `[` 開頭且包含 `[[主題知識/` 的行為條目行
+   - 條目格式：`[YYYY-MM-DD] [[主題知識/[類別]/[標題]|[標題]]] — [摘要]（sources: N）[new|updated]`
    - 從 wikilink 中提取完整路徑（如 `主題知識/實體/Claude Code`）
    - 從路徑的第二層提取 wiki_category（如 `實體`）
    - 將所有條目收集為 `index_entries[]`
@@ -434,12 +435,13 @@ obsidian create path="log.md" content="# Wiki Log\n\n<!-- append-only：只追�
 1. 讀取 `${CLAUDE_PLUGIN_ROOT}/references/index-spec.md` 了解條目格式
 2. 依 `pages[]` 在主對話內部組合完整 index.md 內容：
    - 開頭固定為 `# Wiki Index\n`
-   - 按 wiki_category 分組，依序輸出實體 / 概念 / 比較 / 總覽 四個區塊
-   - 每個條目格式（參考 index-spec.md）：`[YYYY-MM-DD] [[主題知識/[類別]/[標題]|[標題]]] — [摘要]（sources: N）[new|updated]`
+   - 對所有主題頁產出最新條目，每個主題只保留一筆
+   - 按**主題標題字母排序**輸出平坦清單（不引入分類區塊結構）
+   - 每個條目格式：`[YYYY-MM-DD] [[主題知識/[類別]/[標題]|[標題]]] — [摘要]（sources: N）`（重建後都是既有條目，不加 `[new/updated]` 後綴）
    - 每個條目的摘要從對應頁面 `## 摘要` 區塊首句讀取，或正文首句（≤ 50 字）
    - sources 計數從 frontmatter `sources` 陣列長度取得
 3. 移除 `index_stale[]` 中的過期條目（不加入新 index）
-4. 將 `index_missing[]` 中的頁面補入對應分類區塊
+4. 將 `index_missing[]` 中的頁面補入清單（依字母排序插入正確位置）
 5. **使用 Write 工具整檔重建**（管道 2）：
    ```
    Write 工具：[vault_path]/index.md

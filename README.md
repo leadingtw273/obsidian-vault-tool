@@ -12,9 +12,9 @@ Obsidian Vault 知識庫管理工具，作為 Claude Code Plugin 分發。
   - **reset**：重置所有 plugin 管理的設定與模板（筆記不受影響）
   - **delete**：移除管理設定或刪除整個 Vault
 - **`archive` skill**：完整歸檔主入口，同時產生來源記錄（歷史紀錄/）與知識筆記（主題知識/），支援對話、YouTube、Facebook、文章、PDF、網頁等所有來源
-- **`record-archive` skill**：只建立來源記錄，不萃取知識筆記
-- **`knowledge-archive` skill**：只萃取知識筆記，不建立來源記錄
-- **`tag-review` skill**：歸檔時的標籤品質控制，由 archive / knowledge-archive 自動呼叫
+- **`record-only` skill**：只建立來源記錄，不萃取知識筆記
+- **`knowledge-only` skill**：只萃取知識筆記，不建立來源記錄
+- **`tag-review` skill**：標籤品質控制，可獨立觸發或由歸檔流程呼叫
 - **`query` skill**：對 Wiki（主題知識/）提問，讀取相關主題頁綜合回答，可選擇回填為總覽筆記
 - **`lint` skill**：Wiki 健康檢查，偵測孤兒頁面、缺失交叉引用、過期條目、index.md 一致性等問題
 
@@ -22,6 +22,8 @@ Obsidian Vault 知識庫管理工具，作為 Claude Code Plugin 分發。
 
 ```
 vault/
+├── raw/                    # 待歸檔原始檔案
+│   └── archived/           # 已歸檔的 raw 原檔（mv 保留）
 ├── 歷史紀錄/
 │   ├── 對話/               # 來源記錄（conversation），初始化時建立
 │   ├── YouTube/            # 來源記錄（youtube），動態建立
@@ -30,9 +32,15 @@ vault/
 │   ├── 文件/               # 來源記錄（pdf），動態建立
 │   └── 網頁/               # 來源記錄（webpage），動態建立
 │       └── YYYY-MM-DD/     # 子資料夾，檔名 [序號]_[概述].md
-├── 主題知識/                # 知識筆記（archive / knowledge-archive 寫入）
-│   └── YYYY-MM-DD/
+├── 主題知識/                # 知識筆記（archive / knowledge-only 寫入）
+│   ├── 實體/               # wiki_category: 實體
+│   ├── 概念/               # wiki_category: 概念
+│   ├── 比較/               # wiki_category: 比較
+│   └── 總覽/               # wiki_category: 總覽
+├── index.md                # Wiki 主題頁 append-only 目錄清單
+├── log.md                  # 操作紀錄（append-only）
 └── templates/
+    ├── raw.md
     ├── 來源記錄.md
     └── 知識筆記.md
 ```
@@ -42,15 +50,15 @@ vault/
 | Skill | 觸發情境 | 產出 |
 |-------|---------|------|
 | **`archive`** | 「歸檔這次對話」、「把這個存到知識庫」、貼上 URL | 來源記錄 + 知識筆記（雙向 wikilink） |
-| **`record-archive`** | 「只記錄這個來源」、「只要來源記錄」 | 來源記錄（無知識筆記） |
-| **`knowledge-archive`** | 「只要知識整理」、「不需來源記錄」 | 知識筆記（無來源記錄） |
+| **`record-only`** | 「只記錄這個來源」、「只要來源記錄」 | 來源記錄（無知識筆記） |
+| **`knowledge-only`** | 「只要知識整理」、「不需來源記錄」 | 知識筆記（無來源記錄） |
 
 ### archive 執行架構
 
 ```
 archive skill
 ├─ record-writer agent（內容獲取 + 分析 + 建立來源記錄）
-└─ wiki-writer agent × N（平行，從來源記錄讀取原文，撰寫知識筆記）
+└─ wiki-writer agent × N（平行，從 raw/archived/ 讀取原文，撰寫知識筆記）
 ```
 
 ## 前置需求
@@ -114,9 +122,9 @@ Skills 的 symlink 不需重建，更新會直接反映。
 初始化完成後，skills 會在對應情境下自動觸發：
 
 - 說「歸檔這次對話」或貼上 URL 說「幫我整理這個」→ `archive`（完整歸檔）
-- 說「只要知識整理」→ `knowledge-archive`
-- 說「只要來源記錄」→ `record-archive`
-- 歸檔操作中 → `tag-review`（由其他 skill 自動呼叫）
+- 說「只要知識整理」→ `knowledge-only`
+- 說「只要來源記錄」→ `record-only`
+- 說「檢查標籤」「tag review」→ `tag-review`（標籤品質控制）
 - 說「查一下 X」「wiki 裡有沒有」「整理一下 X 主題」→ `query`（Wiki 問答）
 - 說「lint」「wiki 體檢」「檢查 wiki」→ `lint`（健康檢查）
 

@@ -14,7 +14,7 @@ allowed-tools: ["Read", "Glob", "Grep", "Bash", "Agent"]
 # Archive
 
 掃描 `raw/` 目錄，對每個待歸檔檔案呼叫 record-writer agent（建立來源記錄）與 wiki-writer agent × N（upsert 知識頁），
-完成後更新 index.md 與 log.md，並刪除已成功歸檔的 raw 原檔。
+完成後更新 index.md 與 log.md，並將已成功歸檔的 raw 原檔移至 raw/archived/。
 
 對話歸檔情境下，主對話先執行預處理（萃取對話內容 → 寫入 `raw/conversation-[YYYYMMDDHHmm].md`），再進入標準 full-archive 流程。
 
@@ -50,9 +50,9 @@ allowed-tools: ["Read", "Glob", "Grep", "Bash", "Agent"]
 
 | 模式 | 觸發情境 | 執行檔案 | 說明 |
 |------|---------|---------|------|
-| full-archive（預設） | 「歸檔」、「整理 raw」、「處理 inbox」、「存起來」、「整理」，以及對話歸檔（預處理後） | `commands/full-archive.md` | 掃描 raw/ → record-writer → wiki-writer upsert → 更新 index/log → 刪除 raw |
+| full-archive（預設） | 「歸檔」、「整理 raw」、「處理 inbox」、「存起來」、「整理」，以及對話歸檔（預處理後） | `commands/full-archive.md` | 掃描 raw/ → record-writer → wiki-writer upsert → 更新 index/log → 移至 raw/archived/ |
 | record-only | 「只記錄來源」、「不要知識筆記」、「存個紀錄」 | `commands/record-only.md` | 只呼叫 record-writer 寫歷史紀錄，跳過 wiki-writer；仍追加 log.md，不更新 index.md |
-| knowledge-only | 「只要知識」、「從歷史紀錄再推主題」、「不需要來源記錄」 | `commands/knowledge-only.md` | 從指定歷史紀錄檔案直接呼叫 wiki-writer upsert，跳過 record-writer；更新 index.md 與 log.md，不刪除 raw |
+| knowledge-only | 「只要知識」、「從歷史紀錄再推主題」、「不需要來源記錄」 | `commands/knowledge-only.md` | 從指定歷史紀錄檔案直接呼叫 wiki-writer upsert，跳過 record-writer；更新 index.md 與 log.md，不移至 raw/archived/ |
 
 ## 執行方式
 
