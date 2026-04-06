@@ -38,7 +38,7 @@ content_type:
 |------|------|------|
 | `title` | 必填 | 來源標題（文章標題、影片標題、對話概述等） |
 | `date` | 必填 | 內容日期，格式 `YYYY-MM-DD` |
-| `author` | 必填 | 原始作者；不適用時填 `unknown` |
+| `author` | 選填 | 原始作者；缺失或空字串時 record-writer 自動補為 `unknown` |
 | `source` | 必填 | 原始 URL；無 URL 時填 `conversation` 或其他識別資訊 |
 | `content_type` | 選填 | `conversation` / `youtube` / `fb-post` / `article` / `pdf` / `webpage`；未填則由 record-writer 依 source URL 推斷 |
 

@@ -1,6 +1,6 @@
 {
   "name": "obsidian-vault-tool",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Obsidian Vault LLM Wiki 維護工具：raw 歸檔、upsert 主題頁、交叉連結、query 問答、lint 健康檢查",
   "author": {
     "name": "leadingtw"

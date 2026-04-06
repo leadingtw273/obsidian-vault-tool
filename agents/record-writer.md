@@ -23,7 +23,7 @@ color: purple
 解析 frontmatter 取得：
 - `title`（必要）
 - `date`（必要）
-- `author`（必要）
+- `author`（選填，缺失或空時自動補為 `unknown`）
 - `source`（必要）
 - `content_type`（選填）
 
@@ -31,12 +31,13 @@ frontmatter 之後的所有內容視為「原始內容」（body），完整保�
 
 ### Step 2：驗證必要欄位
 
-必要欄位清單：`title`、`date`、`author`、`source`
+必要欄位清單：`title`、`date`、`source`
+選填欄位：`author`（缺失或空字串時自動填為 `unknown`）
 
 驗證規則：
-- 欄位必須存在於 frontmatter
-- 欄位值不可為空字串或 null
+- 必要欄位必須存在於 frontmatter，且值不可為空字串或 null
 - `date` 必須符合 `YYYY-MM-DD` 格式
+- `author` 若缺失或為空字串，自動補為 `unknown`（不熔斷）
 
 **驗證失敗 → 立即熔斷**，不嘗試推斷、不修改 raw 檔，輸出以下格式後立即終止：
 
