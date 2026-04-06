@@ -1,0 +1,97 @@
+# Wiki 分類判準（wiki-category-spec）
+
+本規格定義知識筆記的四種分類及判定流程，供 `wiki-writer` agent 在 Step 3 使用。
+
+---
+
+## 四類定義
+
+| wiki_category | 定義 | 典型範例 |
+|---------------|------|----------|
+| `實體` | 人物、工具、產品、組織、地點等**具體可指稱的對象**，有唯一身份 | Obsidian Web Clipper、Anthropic、Claude Code、吳恩達 |
+| `概念` | 原理、方法論、理論、設計模式、流程等**抽象的知識單元** | LLM、RAG、Prompt Engineering、TDD、LLM Wiki、Transformer 架構 |
+| `比較` | 明確**對比分析兩個以上**實體或概念的整合頁，核心價值在對比本身 | Claude vs GPT、RAG vs LLM Wiki、Obsidian vs Notion |
+| `總覽` | 主題總論、探索結果、橫跨多主題的綜論；常由 query skill 回填 | 2026 AI 趨勢、Obsidian 生態圈總論、LLM 應用現況 |
+
+---
+
+## Agent 判定流程
+
+`wiki-writer` 在決定 `wiki_category` 時，依序執行以下判斷：
+
+```
+Step 1：是否為具體可指稱的對象（人名、工具名、組織名、產品名）？
+    → 是：wiki_category = 實體
+
+Step 2：是否為抽象的原理、方法、模式、理論或流程？
+    → 是：wiki_category = 概念
+
+Step 3：是否明確對比兩個以上對象，且對比本身就是頁面的核心價值？
+    → 是：wiki_category = 比較
+
+Step 4：是否為橫跨多主題的綜論、探索摘要或現況總覽？
+    → 是：wiki_category = 總覽
+
+Step 5：仍無法歸類？
+    → 優先選最接近的類別，不要建立新類
+    → 若真的不確定，預設 概念
+```
+
+> 判定原則：同一主題理論上只會落在一類。若感覺跨類（例如某工具同時是「概念」的實作），以該主題最核心的性質決定，通常工具 → 實體、原理 → 概念。
+
+---
+
+## 路徑慣例
+
+```
+主題知識/[wiki_category]/[主題標題].md
+```
+
+範例：
+- `主題知識/實體/Claude Code.md`
+- `主題知識/概念/RAG.md`
+- `主題知識/比較/Claude vs GPT.md`
+- `主題知識/總覽/2026 AI 趨勢.md`
+
+---
+
+## 同名異物處理
+
+當兩個主題的標題相同但指涉不同對象時（例如 `Claude` 可以是 AI 或音樂家），需加分類詞區分：
+
+### 判定方式
+
+1. Level 2 / Level 5 匹配命中候選頁時，LLM 讀候選頁前 20 行
+2. 比對 `tags[0]` 第一層：
+   - 相同（如同為 `技術`）→ 視為同一主題，進行 upsert 合併
+   - 不同（如 `技術/AI` vs `學習/音樂`）→ 視為**同名異物**，建立新頁
+
+### 命名規則
+
+同名異物頁面在標題後加括號分類詞：
+
+```
+Claude (Anthropic).md
+Claude Debussy.md
+
+Python (程式語言).md
+Python (蛇類).md
+```
+
+分類詞優先使用：所屬組織名、領域名、或最能區分的短詞。
+
+---
+
+## 案例對照表
+
+| 主題 | 判定結果 | 理由 |
+|------|----------|------|
+| Claude Code | 實體 | 具體產品，有唯一身份 |
+| Anthropic | 實體 | 具體組織 |
+| RAG | 概念 | 抽象技術方法論 |
+| Prompt Engineering | 概念 | 抽象工程方法 |
+| LLM Wiki | 概念 | 知識管理方法論 |
+| Claude vs GPT | 比較 | 明確對比兩個實體 |
+| RAG vs LLM Wiki | 比較 | 明確對比兩個概念 |
+| 2026 AI 趨勢 | 總覽 | 橫跨多主題的現況綜論 |
+| Obsidian 生態圈總論 | 總覽 | 探索結果，橫跨多個工具/概念 |

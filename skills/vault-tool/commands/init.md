@@ -10,8 +10,9 @@
 向使用者說明將要建立的內容（不需等待確認，直接呈現後進入階段 2）：
 
 > 我將透過此精靈協助您建立完整的 Obsidian 知識庫，包含：
-> - 標準資料夾結構（歷史紀錄/對話/、主題知識/、templates/）
-> - 2 種筆記模板（來源記錄、知識筆記）
+> - 標準資料夾結構（raw/、歷史紀錄/對話/、主題知識/實體|概念|比較|總覽/、templates/）
+> - 3 種筆記模板（raw、來源記錄、知識筆記）
+> - index.md 與 log.md 空白範本（Wiki 目錄索引與時間軸日誌）
 > - CLAUDE.md 設定檔（讓 Claude 了解此 Vault 的操作規範）
 
 ---
@@ -84,8 +85,13 @@ ${CLAUDE_PLUGIN_ROOT}/scripts/check-deps.sh
 在 Vault 根目錄確保以下資料夾存在（不存在則建立，已存在略過）：
 
 ```
+raw/
+raw/archived/
 歷史紀錄/對話/
-主題知識/
+主題知識/實體/
+主題知識/概念/
+主題知識/比較/
+主題知識/總覽/
 templates/
 ```
 
@@ -93,7 +99,20 @@ templates/
 
 讀取 `${CLAUDE_PLUGIN_ROOT}/references/templates-spec.md` 了解完整規格。
 
-在 `templates/` 目錄建立以下 2 個模板（不存在則建立，已存在略過）：
+在 `templates/` 目錄建立以下 3 個模板（不存在則建立，已存在略過）：
+
+**`raw.md`**：
+```yaml
+---
+title:
+date: "{{date}}"
+author:
+source:
+content_type:
+---
+
+<!-- 在此貼入原始內容 -->
+```
 
 **`來源記錄.md`**：
 ```yaml
@@ -112,13 +131,35 @@ author:
 ---
 title:
 date: "{{date}}"
+updated: "{{date}}"
 tags:
   -
-source:
+aliases: []
+sources:
+  -
 category:
+wiki_category:
 content_type:
 author:
 ---
+```
+
+### 步驟 4-2b：建立 index.md 與 log.md
+
+在 Vault 根目錄建立以下 2 個檔案（不存在則建立，已存在則略過）：
+
+**`index.md`**（Wiki 目錄索引空白範本）：
+
+使用 obsidian CLI 寫入：
+```
+obsidian create path="index.md" content="# Wiki Index\n" vault=[vault_name]
+```
+
+**`log.md`**（時間軸日誌空白範本）：
+
+使用 obsidian CLI 寫入：
+```
+obsidian create path="log.md" content="# Wiki Log\n\n<!-- append-only：只追加，不修改既有條目 -->\n<!-- 格式：## [YYYY-MM-DD HH:mm] [ingest|query|lint] | [標題] -->\n" vault=[vault_name]
 ```
 
 ### 步驟 4-3：生成 CLAUDE.md
@@ -214,16 +255,18 @@ vault_path_windows: [vault_path_windows]
 列出所有已建立的項目：
 
 ```
-✓ 資料夾結構建立完成（歷史紀錄/對話/、主題知識/、templates/）
-✓ 模板檔案建立完成（templates/ 目錄下 2 個模板：來源記錄、知識筆記）
+✓ 資料夾結構建立完成（raw/、歷史紀錄/對話/、主題知識/實體|概念|比較|總覽/、templates/）
+✓ 模板檔案建立完成（templates/ 下 3 個模板：raw、來源記錄、知識筆記）
+✓ index.md 與 log.md 空白範本已建立
 ✓ CLAUDE.md 已生成（plugin v[version]）
 ✓ .obsidian 設定已對齊（或：.obsidian 尚未建立，Obsidian 首次開啟後可重新執行）
 ✓ 全域 CLAUDE.md 已記錄此 Vault
 
 Vault 已就緒。可用的 skills：
-- archive：歸檔任何來源（對話、URL、文章、YouTube 等）時觸發，同時產生來源記錄與知識筆記
-- knowledge-archive：只要知識整理、不需來源記錄時觸發
-- record-archive：只要來源記錄、不需知識整理時觸發
-- tag-review：歸檔時自動呼叫，確保標籤品質
-- social-scraper：抓取 Facebook、YouTube 等社群媒體內容
+- archive：將 raw/ 中的待歸檔檔案寫入歷史紀錄並更新主題知識 Wiki
+- record-only：只寫來源記錄至歷史紀錄，不進行知識萃取
+- knowledge-only：從指定歷史紀錄重新推知識主題，跳過 record-writer
+- query：對 Wiki 提問，讀取相關頁面產出回答，可選擇寫回主題知識/總覽/
+- lint：Wiki 健康檢查，偵測孤兒頁、缺失交叉引用、過期條目等問題
+- tag-review：審查、補充、修正知識筆記的 tags，確保分類一致性
 ```

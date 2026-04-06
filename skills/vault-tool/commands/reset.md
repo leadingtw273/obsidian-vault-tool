@@ -20,11 +20,13 @@
 
 > **重置將執行以下操作：**
 > - CLAUDE.md：完全重新生成（自訂內容將遺失）
-> - templates/ 下的所有模板：全部覆蓋
+> - templates/ 下的所有模板：全部覆蓋（更新為最新版）
+> - index.md：覆寫為空白範本（重置 Wiki 目錄索引）
 > - .obsidian/templates.json、app.json、core-plugins.json：完全重寫
 >
 > **以下內容不受影響：**
-> - 歷史紀錄/、主題知識/ 中的所有筆記
+> - raw/、歷史紀錄/、主題知識/ 中的所有使用者筆記
+> - log.md：保留現有內容（append-only 日誌有歷史價值）
 >
 > 確認要重置嗎？(y/n)
 
@@ -56,7 +58,20 @@
 
 讀取 `${CLAUDE_PLUGIN_ROOT}/references/templates-spec.md` 了解完整規格。
 
-在 `templates/` 目錄**覆蓋**以下 2 個模板（無論是否已存在）：
+在 `templates/` 目錄**覆蓋**以下 3 個模板（無論是否已存在）：
+
+**`raw.md`**：
+```yaml
+---
+title:
+date: "{{date}}"
+author:
+source:
+content_type:
+---
+
+<!-- 在此貼入原始內容 -->
+```
 
 **`來源記錄.md`**：
 ```yaml
@@ -75,14 +90,36 @@ author:
 ---
 title:
 date: "{{date}}"
+updated: "{{date}}"
 tags:
   -
-source:
+aliases: []
+sources:
+  -
 category:
+wiki_category:
 content_type:
 author:
 ---
 ```
+
+---
+
+## 步驟 4b：重置 index.md，保留 log.md
+
+**`index.md`**（覆寫為空白範本）：
+
+使用 obsidian CLI 覆寫（無論是否已存在皆重置）：
+```
+obsidian create path="index.md" content="# Wiki Index\n" overwrite vault=[vault_name]
+```
+
+**`log.md`**（append-only，保留現有內容）：
+- 若**已存在**：完整保留，不做任何修改
+- 若**不存在**：建立空白時間軸日誌：
+  ```
+  obsidian create path="log.md" content="# Wiki Log\n\n<!-- append-only：只追加，不修改既有條目 -->\n<!-- 格式：## [YYYY-MM-DD HH:mm] [ingest|query|lint] | [標題] -->\n" vault=[vault_name]
+  ```
 
 ---
 
@@ -118,11 +155,18 @@ author:
 
 ## 步驟 6：補齊資料夾
 
+讀取 `${CLAUDE_PLUGIN_ROOT}/references/folder-structure.md` 確認完整規格。
+
 確保以下資料夾存在（缺少的建立，多餘的不刪）：
 
 ```
+raw/
+raw/archived/
 歷史紀錄/對話/
-主題知識/
+主題知識/實體/
+主題知識/概念/
+主題知識/比較/
+主題知識/總覽/
 templates/
 ```
 
@@ -132,8 +176,10 @@ templates/
 
 ```
 ✓ CLAUDE.md 已完全重新生成（plugin v[version]）
-✓ 2 個模板已全部覆蓋（來源記錄、知識筆記）
+✓ 3 個模板已全部覆蓋（raw、來源記錄、知識筆記）
+✓ index.md 已覆寫為空白範本
+✓ log.md 保留現有內容（或：不存在，已建立空白範本）
 ✓ .obsidian 設定已完全重寫（或：.obsidian 不存在，略過）
-✓ 資料夾結構已補齊
-✓ 筆記內容完整保留，未受影響
+✓ 資料夾結構已補齊（raw/、歷史紀錄/對話/、主題知識/實體|概念|比較|總覽/、templates/）
+✓ 使用者筆記完整保留，未受影響（raw/、歷史紀錄/、主題知識/ 內容不動）
 ```

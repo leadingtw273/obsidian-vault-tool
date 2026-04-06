@@ -50,24 +50,69 @@
 
 ## 步驟 4：補齊資料夾
 
+讀取 `${CLAUDE_PLUGIN_ROOT}/references/folder-structure.md` 確認完整規格。
+
 確保以下資料夾存在（缺少的建立，**多餘的不刪**）：
 
 ```
+raw/
+raw/archived/
 歷史紀錄/對話/
-主題知識/
+主題知識/實體/
+主題知識/概念/
+主題知識/比較/
+主題知識/總覽/
 templates/
 ```
+
+若偵測到 `主題知識/` 下有符合 `YYYY-MM-DD/` 格式的舊目錄，僅輸出提示訊息：
+
+> 偵測到舊版按日期組織的 `主題知識/YYYY-MM-DD/` 目錄，這些目錄不在新架構規範內。請手動處理（移動、歸檔或忽略），update 命令不會自動遷移。
 
 ---
 
 ## 步驟 5：補齊模板
 
-在 `templates/` 目錄補齊 2 個模板（**已存在的不覆蓋**，只建立缺少的）：
+讀取 `${CLAUDE_PLUGIN_ROOT}/references/templates-spec.md` 了解完整規格。
 
-| 檔名 | category | content_type |
-|------|----------|--------------|
-| `來源記錄.md` | `來源紀錄` | （動態） |
-| `知識筆記.md` | （動態） | （動態） |
+在 `templates/` 目錄補齊 3 個模板：
+
+| 檔名 | 行為 |
+|------|------|
+| `raw.md` | 不存在則建立 |
+| `來源記錄.md` | 不存在則建立 |
+| `知識筆記.md` | 不存在則建立；若已存在但 frontmatter 缺少 `updated`、`aliases`、`sources`、`wiki_category` 欄位（舊版 schema），則更新為新版模板內容 |
+
+新版 **`知識筆記.md`** frontmatter 格式（含新欄位）：
+```yaml
+---
+title:
+date: "{{date}}"
+updated: "{{date}}"
+tags:
+  -
+aliases: []
+sources:
+  -
+category:
+wiki_category:
+content_type:
+author:
+---
+```
+
+---
+
+## 步驟 5b：補齊 index.md 與 log.md
+
+- **`index.md`**：若 Vault 根目錄不存在，建立空白 Wiki 目錄索引；已存在則略過
+- **`log.md`**：若 Vault 根目錄不存在，建立空白時間軸日誌；已存在則略過
+
+使用 obsidian CLI 寫入（分別執行，`create` 不加 `overwrite`，已存在時 CLI 會略過或報錯，確認後略過即可）：
+```
+obsidian create path="index.md" content="# Wiki Index\n" vault=[vault_name]
+obsidian create path="log.md" content="# Wiki Log\n\n<!-- append-only：只追加，不修改既有條目 -->\n<!-- 格式：## [YYYY-MM-DD HH:mm] [ingest|query|lint] | [標題] -->\n" vault=[vault_name]
+```
 
 ---
 
@@ -101,7 +146,9 @@ templates/
 ```
 ✓ CLAUDE.md 已更新至 plugin v[新版本]（自訂區塊已保留）
 ✓ 補齊資料夾：[列出新建的，若無則顯示「無需補齊」]
-✓ 補齊模板：[列出新建的，若無則顯示「無需補齊」]
+✓ 補齊模板：[列出新建的或更新的，若無則顯示「無需補齊」]
+✓ index.md：[已建立空白範本 / 已存在略過]
+✓ log.md：[已建立空白範本 / 已存在略過]
 ✓ .obsidian 設定已增量更新（或：.obsidian 不存在，略過）
 ✓ 全域 CLAUDE.md 已同步
 ```

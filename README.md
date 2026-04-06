@@ -15,7 +15,8 @@ Obsidian Vault 知識庫管理工具，作為 Claude Code Plugin 分發。
 - **`record-archive` skill**：只建立來源記錄，不萃取知識筆記
 - **`knowledge-archive` skill**：只萃取知識筆記，不建立來源記錄
 - **`tag-review` skill**：歸檔時的標籤品質控制，由 archive / knowledge-archive 自動呼叫
-- **`social-scraper` skill**：透過 Playwright MCP 從 Facebook、YouTube 等社群平台抓取最新貼文與影片內容；歸檔社群 URL 時由 record-writer 自動呼叫
+- **`query` skill**：對 Wiki（主題知識/）提問，讀取相關主題頁綜合回答，可選擇回填為總覽筆記
+- **`lint` skill**：Wiki 健康檢查，偵測孤兒頁面、缺失交叉引用、過期條目、index.md 一致性等問題
 
 ## 知識庫架構
 
@@ -49,7 +50,7 @@ vault/
 ```
 archive skill
 ├─ record-writer agent（內容獲取 + 分析 + 建立來源記錄）
-└─ knowledge-writer agent × N（平行，從來源記錄讀取原文，撰寫知識筆記）
+└─ wiki-writer agent × N（平行，從來源記錄讀取原文，撰寫知識筆記）
 ```
 
 ## 前置需求
@@ -116,8 +117,13 @@ Skills 的 symlink 不需重建，更新會直接反映。
 - 說「只要知識整理」→ `knowledge-archive`
 - 說「只要來源記錄」→ `record-archive`
 - 歸檔操作中 → `tag-review`（由其他 skill 自動呼叫）
-- 說「抓取內容」「初始化社群抓取」→ `social-scraper`（Facebook / YouTube 爬取）
+- 說「查一下 X」「wiki 裡有沒有」「整理一下 X 主題」→ `query`（Wiki 問答）
+- 說「lint」「wiki 體檢」「檢查 wiki」→ `lint`（健康檢查）
 
 ## 版本
 
-`0.3.0` — 重構歸檔架構，引入 archive 主 skill + custom agent 兩階段設計（record-writer → knowledge-writer × N），統一來源記錄（支援對話/YouTube/Facebook 等全類型），移除 session-archive
+`0.5.0` — 新增 query（Wiki 問答回填）與 lint（健康檢查）skill；刪除 social-scraper 與 wsl-powershell-bridge；重寫 wiki-writer agent 支援 6 層 fallback 主題匹配；新增 9 份 reference spec（cli-usage、index-spec、log-spec、topic-matching-spec、wiki-category-spec 等）
+
+`0.4.0` — 整合歸檔流程，統一為 archive skill 三模式架構（full / record-only / knowledge-only）
+
+`0.3.0` — 重構歸檔架構，引入 archive 主 skill + custom agent 兩階段設計（record-writer → wiki-writer × N），統一來源記錄（支援對話/YouTube/Facebook 等全類型），移除 session-archive

@@ -1,16 +1,22 @@
 ---
 name: archive
 description: >
-  將任何來源歸檔至 Obsidian Vault。預設同時產生來源記錄與知識筆記。
+  從 Vault 的 raw/ 目錄歸檔待處理檔案，透過 record-writer 建立來源記錄、wiki-writer upsert Wiki 主題頁，
+  並自動更新 index.md 與 log.md，最後清理 raw/ 原檔。
   支援模式：完整歸檔（預設）、只記錄來源（record-only）、只寫知識（knowledge-only）。
-  觸發情境：使用者說「歸檔」、「存起來」、「整理」、「記錄」、「只要知識」、「只記錄來源」，
-  或貼入 URL 要求整理時使用。
-allowed-tools: ["Read", "Glob", "Grep", "Agent"]
+  對話歸檔：使用者說「歸檔對話」、「歸檔當前對話」、「把剛剛聊的存起來」等，
+  主對話先將對話內容寫入 raw/，再走 full-archive 流程。
+  觸發情境：使用者說「歸檔」、「整理 raw」、「處理 inbox」、「存起來」、「整理」、「記錄」、
+  「只要知識」、「只記錄來源」、「歸檔對話」、「歸檔當前對話」時使用。
+allowed-tools: ["Read", "Glob", "Grep", "Bash", "Agent"]
 ---
 
 # Archive
 
-透過 record-writer agent（建立來源記錄）與 knowledge-writer agent × N（撰寫知識筆記）完成歸檔。
+掃描 `raw/` 目錄，對每個待歸檔檔案呼叫 record-writer agent（建立來源記錄）與 wiki-writer agent × N（upsert 知識頁），
+完成後更新 index.md 與 log.md，並刪除已成功歸檔的 raw 原檔。
+
+對話歸檔情境下，主對話先執行預處理（萃取對話內容 → 寫入 `raw/conversation-[YYYYMMDDHHmm].md`），再進入標準 full-archive 流程。
 
 ## 共用前置
 
@@ -22,15 +28,31 @@ allowed-tools: ["Read", "Glob", "Grep", "Agent"]
 
 ---
 
+## 意圖解析
+
+在進行路由之前，**優先判斷使用者是否有對話歸檔意圖**：
+
+**對話歸檔觸發語意（以下任何一種均視為對話歸檔）**：
+- 「歸檔對話」、「歸檔當前對話」、「歸檔這次對話」
+- 「把剛剛聊的存起來」、「把這段對話存到 Vault」
+- 「對話存檔」、「把對話記錄下來」
+- 類似語意的表達
+
+**若偵測到對話歸檔意圖**：執行 `commands/full-archive.md` 中的 **Step -1（對話歸檔預處理）**，完成後繼續走 full-archive 流程（Step 0 起）。
+
+**若非對話歸檔意圖**：直接走下方路由邏輯，從 Step 0 開始。
+
+---
+
 ## 路由邏輯
 
 根據使用者意圖，讀取並執行對應的命令檔案：
 
-| 使用者意圖 | 執行檔案 |
-|-----------|---------|
-| 歸檔、存起來、整理（預設） | `commands/full-archive.md` |
-| 只記錄來源、存個紀錄 | `commands/record-only.md` |
-| 只要知識、不需要來源記錄 | `commands/knowledge-only.md` |
+| 模式 | 觸發情境 | 執行檔案 | 說明 |
+|------|---------|---------|------|
+| full-archive（預設） | 「歸檔」、「整理 raw」、「處理 inbox」、「存起來」、「整理」，以及對話歸檔（預處理後） | `commands/full-archive.md` | 掃描 raw/ → record-writer → wiki-writer upsert → 更新 index/log → 刪除 raw |
+| record-only | 「只記錄來源」、「不要知識筆記」、「存個紀錄」 | `commands/record-only.md` | 只呼叫 record-writer 寫歷史紀錄，跳過 wiki-writer；仍追加 log.md，不更新 index.md |
+| knowledge-only | 「只要知識」、「從歷史紀錄再推主題」、「不需要來源記錄」 | `commands/knowledge-only.md` | 從指定歷史紀錄檔案直接呼叫 wiki-writer upsert，跳過 record-writer；更新 index.md 與 log.md，不刪除 raw |
 
 ## 執行方式
 
