@@ -33,6 +33,7 @@
 | `backlinks` | 列出指定檔案的反向連結 | `obsidian backlinks vault=X file="Note"` |
 | `unresolved` | 列出未解決的 wikilink | `obsidian unresolved vault=X` |
 | `deadends` | 列出無外向連結的檔案 | `obsidian deadends vault=X` |
+| `files` | 列出 Vault 中的檔案 | `obsidian files vault=X` |
 | `properties` | 列出 vault 或檔案的 frontmatter | `obsidian properties vault=X file="Note"` |
 | `links` | 列出檔案的外向連結 | `obsidian links vault=X file="Note"` |
 

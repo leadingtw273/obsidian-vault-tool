@@ -14,7 +14,8 @@ color: green
 由呼叫方提供：
 
 - **主題標題**、**來源記錄路徑**、**來源記錄檔名**（或 knowledge-only / query 模式下：原文內容）
-- **raw_archived_path**（選填）：歸檔後的 raw 檔相對路徑，例如 `raw/archived/20260405-some-article.md`，由 record-writer 的輸出提供。有此欄位時，Step 1 從該路徑讀取完整原文
+- **raw_file_path**（選填）：raw 檔的相對路徑（可能是 `raw/xxx.md` 或 `raw/archived/xxx.md`），由呼叫方提供。有此欄位時，Step 1 從該路徑讀取完整原文
+- **raw_archived_path**（選填，legacy）：歸檔後的 raw 檔相對路徑，例如 `raw/archived/20260405-some-article.md`。功能同 `raw_file_path`，優先使用 `raw_file_path`
 - **來源類型**（content_type）、**Vault 路徑**、**Vault 名稱**、**今日日期**
 - **額外指示**（選填）：呼叫方可指定 `wiki_category` 強制值、特定 `sources` 陣列內容等 override
 
@@ -24,8 +25,8 @@ color: green
 
 ### Step 1：取得原文
 
-- 有 `raw_archived_path` → 用 Read 工具讀取 `[vault_path]/raw/archived/[檔名]`，取得 frontmatter 之後的 body 作為原文
-- 無 `raw_archived_path`，但有來源記錄路徑 → 用 Read 工具讀取來源記錄檔，從「## 總結」區塊取得摘要內容作為原文參考（注意：新版來源記錄已不含完整原文）
+- 有 `raw_file_path` 或 `raw_archived_path` → 用 Read 工具讀取 `[vault_path]/[該路徑]`，取得 frontmatter 之後的 body 作為原文（優先使用 `raw_file_path`）
+- 無上述欄位，但有來源記錄路徑 → 用 Read 工具讀取來源記錄檔，從「## 總結」區塊取得摘要內容作為原文參考（注意：新版來源記錄已不含完整原文）
 - 無來源記錄（knowledge-only / query 模式）→ 使用呼叫方傳入的原文內容
 
 ### Step 2：萃取知識
@@ -176,11 +177,13 @@ obsidian append vault=[vault_name] path="主題知識/[wiki_category]/[主題標
    # 更新 sources 陣列（先讀取現有值 → 合併去重 → 覆寫）
    # Step 5B-5a：用 Read 工具讀取既有頁 frontmatter，取得現有 sources 陣列
    # Step 5B-5b：將新來源 "[[來源記錄檔名]]" 加入陣列，去重後合併
-   # Step 5B-5c：用 eval 寫回（陣列元素用單引號，wikilink 含 [[...]]）
+   # Step 5B-5c：用 eval 寫回（陣列元素在 JS code 中用單引號包裹，wikilink 含 [[...]]）
+   # 注意：這裡的單引號是 JS 字串語法，processFrontMatter 會自動處理最終 YAML 輸出的引號格式
    obsidian eval vault=[vault_name] code="app.fileManager.processFrontMatter(app.vault.getAbstractFileByPath('主題知識/[wiki_category]/[主題標題].md'), fm => { fm.sources = ['[[001_舊來源]]','[[002_新來源]]']; })"
 
    # 更新 aliases 陣列（若本次來源使用了新稱呼）
    # 同上：先讀現有 aliases → 合併去重 → 覆寫
+   # JS code 中用單引號，processFrontMatter 處理 YAML 輸出格式
    obsidian eval vault=[vault_name] code="app.fileManager.processFrontMatter(app.vault.getAbstractFileByPath('主題知識/[wiki_category]/[主題標題].md'), fm => { fm.aliases = ['別名1','別名2']; })"
    ```
 

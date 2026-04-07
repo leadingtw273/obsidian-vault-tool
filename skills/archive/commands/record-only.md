@@ -51,6 +51,7 @@ raw_file_path：[絕對路徑]
 
 從輸出提取以下欄位：
 - `raw_file_path`（供 Step 3 移動至 raw/archived/ 用）
+- `raw_archived_path`（歸檔後路徑 `raw/archived/[檔名].md`，供日後 knowledge-only 回讀用）
 - `來源記錄路徑`、`來源記錄檔名`
 - `來源類型`（`content_type`）
 - 執行紀錄（存為 `record_writer_logs[]`）

@@ -23,7 +23,7 @@
 > **1. soft（軟刪除）**
 > 僅移除 plugin 管理的設定檔：
 > - 刪除 `CLAUDE.md`
-> - 刪除 `templates/` 目錄下由 plugin 建立的 2 個模板
+> - 刪除 `templates/` 目錄下由 plugin 建立的 3 個模板（`raw.md`、`來源記錄.md`、`知識筆記.md`）
 > - 移除 `.obsidian/templates.json`、`app.json` 中由 plugin 管理的欄位
 > - 筆記、資料夾結構、其他 .obsidian 設定完整保留
 >
@@ -46,7 +46,7 @@
 ### Soft 模式
 
 1. 刪除 `[vault_path]/CLAUDE.md`
-2. 刪除 `templates/` 下的 2 個 plugin 模板（`來源記錄.md`、`知識筆記.md`），其他使用者自建模板不動
+2. 刪除 `templates/` 下的 3 個 plugin 模板（`raw.md`、`來源記錄.md`、`知識筆記.md`），其他使用者自建模板不動
 3. 若 `.obsidian/templates.json` 存在：刪除整個檔案（或移除 plugin 管理欄位）
 4. 若 `.obsidian/app.json` 存在：移除 `newFileLocation`、`newFileFolderPath` 欄位，保留其餘欄位
 
@@ -73,10 +73,15 @@
 >
 > 請輸入 Vault 名稱（`[vault_name]`）確認刪除：
 
-使用者輸入正確的 vault_name 後，執行：
+使用者輸入正確的 vault_name 後，再次確認：
+
+> ⚠️ **最終確認**：即將執行 `rm -rf "[vault_path]"`，此操作不可逆。
+> 輸入 `YES` 繼續，其他任何輸入取消。
+
+使用者輸入 `YES` 後，執行：
 
 ```bash
-rm -rf [vault_path]
+rm -rf "[vault_path]"
 ```
 
 ---

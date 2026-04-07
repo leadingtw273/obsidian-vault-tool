@@ -8,7 +8,7 @@ description: >
   使用者想開始使用 Obsidian 或建立知識庫；說 vault 設定壞了或 templates 不見了；
   想更新 plugin 版本或同步 CLAUDE.md；說不想用這個 plugin 了或要清掉設定；
   要刪除整個 vault；說「init」「reset」「update」「delete」且涉及 Obsidian 或 vault。
-allowed-tools: ["Read", "Write", "Edit", "Glob", "Grep", "Bash(${CLAUDE_PLUGIN_ROOT}/scripts/check-deps.sh:*)", "Bash(${CLAUDE_PLUGIN_ROOT}/scripts/check-init-status.sh:*)"]
+allowed-tools: ["Read", "Write", "Edit", "Glob", "Grep", "Bash"]
 ---
 
 # vault-tool 路由器

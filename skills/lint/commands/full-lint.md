@@ -70,7 +70,7 @@ obsidian orphans vault=[vault_name]
 
 ```
 Grep 工具：
-  pattern: \[\[.*T.*\]\]
+  pattern: \[\[.*{主題標題}.*\]\]（將 {主題標題} 替換為實際的主題標題）
   path: [vault_path]
   glob: **/*.md（排除 index.md）
   output_mode: files_with_matches

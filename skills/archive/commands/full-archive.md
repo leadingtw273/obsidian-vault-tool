@@ -227,7 +227,7 @@ Agent tool，`subagent_type: "obsidian-vault-tool:wiki-writer"`。
 **主題**：[主題標題]
 **來源記錄檔名**：[序號_概述]
 **來源記錄路徑**：[完整路徑]
-**raw_archived_path**：[raw/archived/[原始檔名].md]（由 record-writer 輸出提供，供讀取完整原文）
+**raw_file_path**：[raw/[原始檔名].md]（由 record-writer 輸出提供，供讀取完整原文。注意：此時檔案尚未移至 raw/archived/，須使用原始 raw 路徑）
 **來源類型**：[content_type]
 **Vault 路徑**：[vault_path]
 **Vault 名稱**：[vault_name]

@@ -11,10 +11,11 @@ Obsidian Vault 知識庫管理工具，作為 Claude Code Plugin 分發。
   - **update**：更新 plugin 設定至最新版本（保留使用者自訂內容）
   - **reset**：重置所有 plugin 管理的設定與模板（筆記不受影響）
   - **delete**：移除管理設定或刪除整個 Vault
-- **`archive` skill**：完整歸檔主入口，同時產生來源記錄（歷史紀錄/）與知識筆記（主題知識/），支援對話、YouTube、Facebook、文章、PDF、網頁等所有來源
-- **`record-only` skill**：只建立來源記錄，不萃取知識筆記
-- **`knowledge-only` skill**：只萃取知識筆記，不建立來源記錄
-- **`tag-review` skill**：標籤品質控制，可獨立觸發或由歸檔流程呼叫
+- **`archive` skill**：完整歸檔主入口，同時產生來源記錄（歷史紀錄/）與知識筆記（主題知識/），支援對話、YouTube、Facebook、文章、PDF、網頁等所有來源。提供三種模式：
+  - **full-archive**（預設）：來源記錄 + 知識筆記
+  - **record-only**：只建立來源記錄，不萃取知識筆記
+  - **knowledge-only**：只萃取知識筆記，不建立來源記錄
+- **`tag-review` skill**：標籤品質控制，由使用者手動觸發
 - **`query` skill**：對 Wiki（主題知識/）提問，讀取相關主題頁綜合回答，可選擇回填為總覽筆記
 - **`lint` skill**：Wiki 健康檢查，偵測孤兒頁面、缺失交叉引用、過期條目、index.md 一致性等問題
 
@@ -49,9 +50,9 @@ vault/
 
 | Skill | 觸發情境 | 產出 |
 |-------|---------|------|
-| **`archive`** | 「歸檔這次對話」、「把這個存到知識庫」、貼上 URL | 來源記錄 + 知識筆記（雙向 wikilink） |
-| **`record-only`** | 「只記錄這個來源」、「只要來源記錄」 | 來源記錄（無知識筆記） |
-| **`knowledge-only`** | 「只要知識整理」、「不需來源記錄」 | 知識筆記（無來源記錄） |
+| **`archive`**（full） | 「歸檔這次對話」、「把這個存到知識庫」、貼上 URL | 來源記錄 + 知識筆記（雙向 wikilink） |
+| **`archive`**（record-only） | 「只記錄這個來源」、「只要來源記錄」 | 來源記錄（無知識筆記） |
+| **`archive`**（knowledge-only） | 「只要知識整理」、「不需來源記錄」 | 知識筆記（無來源記錄） |
 
 ### archive 執行架構
 
@@ -129,6 +130,8 @@ Skills 的 symlink 不需重建，更新會直接反映。
 - 說「lint」「wiki 體檢」「檢查 wiki」→ `lint`（健康檢查）
 
 ## 版本
+
+`0.5.1` — 全盤審查修復：修正 full-archive 時序 bug（wiki-writer 讀取 raw 路徑）、放寬 vault-tool/lint allowed-tools 限制、delete hard 模式加引號與二次確認、統一 GitHub URL、修正 README 描述與 cli-usage 補齊 `files` 命令、清理死碼與過時引用
 
 `0.5.0` — 新增 query（Wiki 問答回填）與 lint（健康檢查）skill；刪除 social-scraper 與 wsl-powershell-bridge；重寫 wiki-writer agent 支援 6 層 fallback 主題匹配；新增 9 份 reference spec（cli-usage、index-spec、log-spec、topic-matching-spec、wiki-category-spec 等）
 

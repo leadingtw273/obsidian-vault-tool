@@ -6,7 +6,7 @@ description: >
   輸出修補建議報告。
   觸發情境：使用者說「lint」、「檢查 wiki」、「wiki 健康度」、「wiki 體檢」、
   「看看 wiki 有什麼問題」時使用。
-allowed-tools: ["Read", "Glob", "Grep", "Bash", "Agent"]
+allowed-tools: ["Read", "Write", "Edit", "Glob", "Grep", "Bash", "Agent"]
 ---
 
 # Lint
@@ -25,4 +25,4 @@ allowed-tools: ["Read", "Glob", "Grep", "Bash", "Agent"]
 
 讀取並執行 `commands/full-lint.md` 中的步驟。
 
-PLUGIN_ROOT 為此 SKILL.md 所在目錄：${CLAUDE_PLUGIN_ROOT}/skills/lint
+以下 command 中使用 `${CLAUDE_PLUGIN_ROOT}` 引用 plugin 根目錄。

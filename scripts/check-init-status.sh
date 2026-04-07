@@ -18,7 +18,7 @@ if [ ! -f "$CLAUDE_MD" ]; then
   exit 1
 fi
 
-if grep -q "plugin_version" "$CLAUDE_MD"; then
+if grep -q "^plugin_version:" "$CLAUDE_MD"; then
   echo "ALREADY_INITIALIZED: CLAUDE.md found with plugin_version at $VAULT_PATH"
   exit 0
 else

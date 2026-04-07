@@ -25,4 +25,4 @@ allowed-tools: ["Read", "Glob", "Grep", "Bash", "Agent"]
 
 讀取並執行 `commands/ask.md` 中的步驟。
 
-PLUGIN_ROOT 為此 SKILL.md 所在目錄：${CLAUDE_PLUGIN_ROOT}/skills/query
+以下 command 中使用 `${CLAUDE_PLUGIN_ROOT}` 引用 plugin 根目錄。

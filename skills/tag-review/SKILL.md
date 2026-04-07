@@ -33,5 +33,4 @@ allowed-tools: ["Read", "Glob", "Grep", "Bash"]
 
 ## 確認流程
 
-- **使用者直接觸發**：輸出建議後等待確認，確認後用 obsidian CLI 寫入
-- **由其他 agent 呼叫**：直接回傳結果，不詢問
+輸出建議後等待使用者確認，確認後用 obsidian CLI 寫入。
