@@ -8,7 +8,7 @@
 
 `index.md` 是 Wiki 層的 append-only 目錄清單，供 LLM 在歸檔與查詢時快速定位主題頁。
 
-每次新建或更新主題頁後，由主對話追加一行條目。隨時間積累，同主題可能出現多條記錄。由 lint skill 定期清理。
+每次新建或更新主題頁後，由主對話追加一行條目。隨時間積累，同主題可能出現多條記錄。由 curator skill 定期清理。
 
 ---
 
@@ -19,7 +19,7 @@
 - **更新時機**：
   - archive 完成後（新建或更新主題頁後）
   - query skill 回填總覽頁後
-  - lint 清理後（整檔重建，使用管道 2 Write 工具）
+  - curator 清理後（整檔重建，使用管道 2 Write 工具）
 
 ---
 
@@ -46,9 +46,9 @@
 
 ---
 
-## lint 清理規則
+## curator 清理規則
 
-index.md 隨 append 積累，同主題會出現多條記錄。lint skill 定期清理：
+index.md 隨 append 積累，同主題會出現多條記錄。curator skill 定期清理：
 
 1. 使用 Read 工具讀取整個 index.md
 2. 解析所有條目，按主題分組
@@ -56,7 +56,7 @@ index.md 隨 append 積累，同主題會出現多條記錄。lint skill 定期�
 4. 重新按 wiki_category 分組排序
 5. 使用 Write 工具整檔重建
 
-> lint 清理使用管道 2（Claude Code Read/Write），不走 obsidian CLI。
+> curator 清理使用管道 2（Claude Code Read/Write），不走 obsidian CLI。
 
 ---
 

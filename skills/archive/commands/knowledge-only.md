@@ -130,7 +130,7 @@ obsidian append vault=[vault_name] path="index.md" content="\n[YYYY-MM-DD] [[主
   [YYYY-MM-DD] [[主題知識/[類別]/[標題]|[標題]]] — [一行摘要]（sources: N）[new|updated]
   ```
 
-> 注意：index.md 採 append-only 模式，不讀取整檔、不覆寫。lint skill 負責定期清理重複條目。
+> 注意：index.md 採 append-only 模式，不讀取整檔、不覆寫。curator skill 負責定期清理重複條目。
 
 ---
 

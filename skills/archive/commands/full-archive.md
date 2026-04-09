@@ -170,6 +170,35 @@ raw/ 目錄有 N 個待歸檔檔案：
 
 ---
 
+## Step 0.5：預分配序號（主對話執行）
+
+> 解決並行 record-writer 的序號競態問題。主對話在呼叫 record-writer 前，先掃描目標目錄的現有序號，為每個 raw 檔預分配遞增序號。
+
+1. **讀取所有 raw 檔的 content_type**：對 Step 0 確定的檔案清單，逐一用 Read 工具讀取 frontmatter，提取 `content_type`（若無則依 `source` 推斷，規則同 record-writer Step 3）
+
+2. **按 content_type 分組**：將 raw 檔按 content_type 分組，對照類型目錄：
+
+   | content_type | 目錄 |
+   |---|---|
+   | conversation | 對話/ |
+   | youtube | YouTube/ |
+   | fb-post | Facebook/ |
+   | article | 文章/ |
+   | pdf | 文件/ |
+   | webpage | 網頁/ |
+
+3. **掃描現有序號**：對每個需要用到的類型目錄，用 Glob 工具掃描 `[vault_path]/歷史紀錄/[類型目錄]/[今日日期]/*.md`，計算現有檔案數量，取最大序號
+
+4. **預分配序號**：從最大序號 + 1 開始，依同組內的 raw 檔順序（按檔名排序）遞增分配。記錄為 `assigned_sequences` 對照表：
+
+   ```
+   raw 檔名 → 指定序號
+   ```
+
+5. **傳入 record-writer**：在 Step 1 的每個 record-writer prompt 中附加 `**指定序號**：[N]`
+
+---
+
 ## Step 1：對每個 raw 檔並行呼叫 record-writer
 
 Agent tool，`subagent_type: "obsidian-vault-tool:record-writer"`。
@@ -182,6 +211,7 @@ Agent tool，`subagent_type: "obsidian-vault-tool:record-writer"`。
 **Vault 路徑**：[vault_path]
 **Vault 名稱**：[vault_name]
 **今日日期**：[YYYY-MM-DD]
+**指定序號**：[N]（由 Step 0.5 預分配）
 ```
 
 **等待每個 agent 輸出並解析**：
@@ -214,25 +244,72 @@ raw_archived_path：[raw/archived/[檔名].md]
 
 ---
 
+## Step 1.5：跨 raw 檔主題去重（主對話執行）
+
+> 解決多個 raw 檔主題高度重疊的問題。在呼叫 wiki-writer 前，由主對話合併相似主題。
+> record-writer 現在輸出**樹狀結構**（獨立主題 + 子主題），去重需理解母子關係。
+
+1. **收集所有主題樹**：從 Step 1 所有成功的 record-writer 結果中，收集全部知識主題樹，保留母子關係，標記每個主題的來源 raw 檔
+
+2. **樹狀結構去重**：
+   - **跨檔子主題合併**：若不同 raw 檔的子主題屬於相同母主題，合併到同一母主題下
+   - **跨檔獨立主題合併**：相同獨立主題照舊合併
+   - **衝突處理**：若一個檔案將 X 識別為獨立主題，另一個將 X 識別為 Y 的子主題 → 以「獨立主題」為優先（寧可獨立也不錯誤合併）
+
+3. **語意比對**（在樹狀結構內進一步去重）：
+   - 標題核心詞相同或為同義詞
+   - 描述同一概念的不同面向，但內容會高度重疊
+   - 同一 source 產出的主題中，某主題是另一主題的子集
+
+4. **合併決策**：對每對相似主題，選擇一個作為保留主題，另一個標記為「已合併」。合併後的主題繼承所有來源 raw 檔的 `來源記錄檔名` 和 `來源記錄路徑`
+
+5. **產出去重主題清單**：記錄 `deduped_topics[]`，每個項目包含：
+   - 主題標題（合併後的最終標題）
+   - 類型（獨立主題 / 子主題）
+   - 母主題（僅子主題）
+   - 子主題列表（僅獨立主題，含其下所有子主題）
+   - 關聯的所有來源記錄（可能來自多個 raw 檔）
+   - raw_file_path（用於讀取原文，若多個來源則取第一個）
+
+6. **輸出去重摘要**（供完成通知用）：
+   ```
+   主題去重：[原始數] 個 → [去重後數] 個（合併 [N] 對）
+   - [主題A] + [主題B] → [保留主題]
+   - ...
+   ```
+
+---
+
 ## Step 2：解析主題列表 → 並行呼叫 wiki-writer（upsert 模式）
 
-對每個 Step 1 成功的 record-writer 結果，依其**知識主題列表**並行呼叫 wiki-writer agents。
+對 Step 1.5 去重後的主題清單，並行呼叫 wiki-writer agents。
+
+> **重要**：wiki-writer **只做寫入**（新建頁面或合併內容），不執行結構升級。子主題以 `##` 章節形式寫入母主題頁面。結構升級由 curator skill 在後續巡檢時處理。
 
 Agent tool，`subagent_type: "obsidian-vault-tool:wiki-writer"`。
 
-若同批次有多個 raw 檔各自含多個主題，在**單一訊息**中對所有主題同時發出 Agent tool 呼叫。
+**呼叫策略**：對每個**獨立主題**（含其子主題列表）呼叫一個 wiki-writer。子主題不獨立呼叫 wiki-writer，而是由負責母主題的 wiki-writer 一併處理。
+
+在**單一訊息**中對所有獨立主題同時發出 Agent tool 呼叫。
 
 **每個 agent 的 Prompt**：
 ```
 **主題**：[主題標題]
-**來源記錄檔名**：[序號_概述]
-**來源記錄路徑**：[完整路徑]
+**子主題列表**：（若有子主題）
+  - [子主題A]：[獨立性理由]
+  - [子主題B]：[獨立性理由]
+**來源記錄檔名**：[序號_概述]（若多個來源，列出所有）
+**來源記錄路徑**：[完整路徑]（若多個來源，列出所有）
 **raw_file_path**：[raw/[原始檔名].md]（由 record-writer 輸出提供，供讀取完整原文。注意：此時檔案尚未移至 raw/archived/，須使用原始 raw 路徑）
 **來源類型**：[content_type]
 **Vault 路徑**：[vault_path]
 **Vault 名稱**：[vault_name]
 **今日日期**：[YYYY-MM-DD]
+**本批次其他主題**：[列出本批次所有其他獨立主題標題，每行一個]
 ```
+
+> `**本批次其他主題**` 讓每個 wiki-writer 知道同批次有哪些主題正在被其他 agent 處理，避免建立過於相似的頁面。wiki-writer 在 Step 4 搜尋既有頁時，應將此清單中的主題視為「即將建立的頁面」，若本主題與清單中某主題高度相似，應在輸出中標記警告（但不阻塞寫入）。
+> `**子主題列表**` 告知 wiki-writer 哪些子概念應作為 `##` 章節寫入母主題頁面。wiki-writer 擁有最終裁判權，可依 Vault 現有內容覆寫此結構。
 
 **等待輸出並解析**：
 - 寫入路徑（`主題知識/[類別]/[標題].md`）
@@ -280,20 +357,22 @@ Agent tool，`subagent_type: "obsidian-vault-tool:wiki-writer"`。
 
 執行流程：
 
-對本次所有寫入的知識筆記（新建 + merge，驗證通過者），對每個主題使用 `obsidian append` 追加一行條目：
+對本次所有寫入的知識筆記（新建 + merge，驗證通過者），對每個主題使用 `obsidian append` 追加一行條目。
+
+**標記規則**（根據 Step 2 wiki-writer 回傳的寫入模式決定）：
+- wiki-writer 回傳「**新建**」→ 標記 `[new]`
+- wiki-writer 回傳「**merge**」→ 標記 `[updated]`
 
 ```bash
-obsidian append vault=[vault_name] path="index.md" content="\n[YYYY-MM-DD] [[主題知識/[類別]/[標題]|[標題]]] — [一行摘要]（sources: N）[new]"
+obsidian append vault=[vault_name] path="index.md" content="\n[YYYY-MM-DD] [[主題知識/[類別]/[標題]|[標題]]] — [一行摘要]（sources: N）[new|updated]"
 ```
 
-- **新建主題**：末尾標記 `[new]`
-- **merge 主題**：末尾標記 `[updated]`
-- 每個主題各自一次 append，條目格式：
-  ```
-  [YYYY-MM-DD] [[主題知識/[類別]/[標題]|[標題]]] — [一行摘要]（sources: N）[new|updated]
-  ```
+每個主題各自一次 append，條目格式：
+```
+[YYYY-MM-DD] [[主題知識/[類別]/[標題]|[標題]]] — [一行摘要]（sources: N）[new|updated]
+```
 
-> 注意：index.md 採 append-only 模式，不讀取整檔、不覆寫。lint skill 負責定期清理重複條目。
+> 注意：index.md 採 append-only 模式，不讀取整檔、不覆寫。curator skill 負責定期清理重複條目。
 > index.md 由主對話串行更新，不委派 sub-agent，避免並行寫入衝突。
 
 ---
@@ -307,6 +386,10 @@ obsidian append vault=[vault_name] path="index.md" content="\n[YYYY-MM-DD] [[主
 **時間戳記**：執行 `date '+%Y-%m-%d %H:%M'` 取得當前本地時間。
 
 **Append 方法**：直接 append，不需讀取整檔再寫回。
+
+**new/updated 分類**（根據 Step 2 wiki-writer 回傳的寫入模式決定）：
+- wiki-writer 回傳「**新建**」的主題 → 歸入 `- new:` 行
+- wiki-writer 回傳「**merge**」的主題 → 歸入 `- updated:` 行
 
 ```bash
 obsidian append vault=[vault_name] path="log.md" content="\n## [YYYY-MM-DD HH:mm] ingest | [來源標題]\n- record: [[歷史紀錄/[type]/[YYYY-MM-DD]/[序號]_[概述]]]\n- new: [[主題知識/[類別]/主題A]], [[主題知識/[類別]/主題B]]\n- updated: [[主題知識/[類別]/主題C]]"

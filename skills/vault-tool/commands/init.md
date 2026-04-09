@@ -1,6 +1,6 @@
 # 知識庫建立精靈（init）
 
-這是一個一次性互動精靈，協助使用者從零建立完整的 Obsidian Vault 環境，
+這是一個兩階段互動精靈，協助使用者從零建立完整的 Obsidian Vault 環境，
 包含資料夾結構、模板、CLAUDE.md 與 .obsidian 設定。
 
 ---
@@ -42,7 +42,7 @@
   - 若 `vault_path` 以 `/mnt/` 開頭，判定為 WSL2 環境
   - WSL2 路徑轉換規則：`/mnt/c/Users/...` → `C:\Users\...`
   - 記錄 `vault_path_windows`（WSL2 環境才有）
-- 讀取 `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` 取得 `version` 欄位
+- 沿用路由器（SKILL.md）共用前置讀取的 `plugin_version`；若未傳入，讀取 `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` 取得 `version` 欄位
 
 確認路徑不存在衝突：執行 `${CLAUDE_PLUGIN_ROOT}/scripts/check-init-status.sh [vault_path]`
 
@@ -76,13 +76,15 @@ ${CLAUDE_PLUGIN_ROOT}/scripts/check-deps.sh
 
 ---
 
-## 階段 4：建立知識庫
+## 階段 4A：建立環境（資料夾結構 + Obsidian 開啟）
 
-### 步驟 4-1：建立資料夾結構
+此階段的目標：讓 vault 資料夾存在且已在 Obsidian 中開啟，使 obsidian CLI 可用。
+
+### 步驟 4A-1：建立資料夾結構
 
 讀取 `${CLAUDE_PLUGIN_ROOT}/references/folder-structure.md` 了解完整規格。
 
-在 Vault 根目錄確保以下資料夾存在（不存在則建立，已存在略過）：
+嘗試在 Vault 根目錄建立以下資料夾（使用 `mkdir -p`）：
 
 ```
 raw/
@@ -95,74 +97,94 @@ raw/archived/
 templates/
 ```
 
-### 步驟 4-2：建立模板檔案
+- 若建立**成功**：繼續下一步
+- 若建立**失敗**（例如唯讀檔案系統），切換為引導模式：
+
+  > 無法自動建立資料夾（可能是檔案系統權限限制）。
+  > 請手動建立資料夾結構，您可以在終端機中執行以下命令：
+  >
+  > **Windows PowerShell：**
+  > ```powershell
+  > New-Item -ItemType Directory -Force -Path "[vault_path_windows]\raw\archived","[vault_path_windows]\歷史紀錄\對話","[vault_path_windows]\主題知識\實體","[vault_path_windows]\主題知識\概念","[vault_path_windows]\主題知識\比較","[vault_path_windows]\主題知識\總覽","[vault_path_windows]\templates"
+  > ```
+  >
+  > **macOS / Linux：**
+  > ```bash
+  > mkdir -p "[vault_path]"/{raw/archived,"歷史紀錄/對話","主題知識"/{實體,概念,比較,總覽},templates}
+  > ```
+  >
+  > 完成後請告訴我。
+
+  等待使用者確認後，驗證資料夾確實存在再繼續。
+
+### 步驟 4A-2：驗證 Obsidian 已就緒
+
+執行 `obsidian vaults` 確認 vault 已列出。
+
+- 若 vault **已列出**：直接繼續階段 4B
+- 若 vault **未列出**：引導使用者開啟 Vault：
+
+  > 需要先在 Obsidian 中開啟此 Vault，obsidian CLI 才能正常寫入檔案。
+  >
+  > 若尚未安裝 Obsidian，請先至 https://obsidian.md 下載安裝。
+  >
+  > 請在 Obsidian 中執行以下操作：
+  > 1. 開啟 Obsidian 應用程式
+  > 2. 選擇「開啟資料夾作為 Vault」（Open folder as vault）
+  > 3. 選取路徑：`[vault_path]`（Windows 環境選取 `[vault_path_windows]`）
+  >
+  > 完成後請告訴我。
+
+  等待使用者確認後，重新執行 `obsidian vaults` 驗證：
+  - 若仍未列出，再次引導並提示確認 Obsidian 是否正在執行
+  - 若已列出，繼續階段 4B
+
+---
+
+## 階段 4B：寫入內容（透過 obsidian CLI）
+
+此階段的所有檔案寫入都透過 obsidian CLI，確保跨平台相容。
+
+> ⚠️ 防呆：在執行任何 create 命令前，先執行 `obsidian vaults` 確認 vault 仍在清單中。若未列出，中止並引導使用者重新開啟 Vault（回到步驟 4A-2）。
+
+> ⚠️ **`vault=` 必須放在 `content=` 之前。** 建議格式：`obsidian [command] vault=X path=... content=...`。若命令靜默失敗，優先檢查 `vault=` 是否在 `content=` 之後。
+
+### 步驟 4B-1：建立模板檔案
 
 讀取 `${CLAUDE_PLUGIN_ROOT}/references/templates-spec.md` 了解完整規格。
 
 在 `templates/` 目錄建立以下 3 個模板（不存在則建立，已存在略過）：
 
 **`raw.md`**：
-```yaml
----
-title:
-date: "{{date}}"
-author:
-source:
-content_type:
----
-
-<!-- 在此貼入原始內容 -->
+```bash
+obsidian create vault=[vault_name] path="templates/raw.md" content="---\ntitle:\ndate: \"{{date}}\"\nauthor:\nsource:\ncontent_type:\n---\n\n<!-- 在此貼入原始內容 -->"
 ```
 
 **`來源記錄.md`**：
-```yaml
----
-title:
-date: "{{date}}"
-source:
-category: 來源紀錄
-content_type:
-author:
----
+```bash
+obsidian create vault=[vault_name] path="templates/來源記錄.md" content="---\ntitle:\ndate: \"{{date}}\"\nsource:\ncategory: 來源紀錄\ncontent_type:\nauthor:\n---"
 ```
 
 **`知識筆記.md`**：
-```yaml
----
-title:
-date: "{{date}}"
-updated: "{{date}}"
-tags:
-  -
-aliases: []
-sources:
-  -
-category:
-wiki_category:
-content_type:
-author:
----
+```bash
+obsidian create vault=[vault_name] path="templates/知識筆記.md" content="---\ntitle:\ndate: \"{{date}}\"\nupdated: \"{{date}}\"\ntags:\n  -\naliases: []\nsources:\n  -\ncategory:\nwiki_category:\ncontent_type:\nauthor:\n---"
 ```
 
-### 步驟 4-2b：建立 index.md 與 log.md
+### 步驟 4B-2：建立 index.md 與 log.md
 
 在 Vault 根目錄建立以下 2 個檔案（不存在則建立，已存在則略過）：
 
 **`index.md`**（Wiki 目錄索引空白範本）：
-
-使用 obsidian CLI 寫入：
-```
+```bash
 obsidian create vault=[vault_name] path="index.md" content="# Wiki Index\n"
 ```
 
 **`log.md`**（時間軸日誌空白範本）：
-
-使用 obsidian CLI 寫入：
-```
+```bash
 obsidian create vault=[vault_name] path="log.md" content="# Wiki Log\n\n<!-- append-only：只追加，不修改既有條目 -->\n<!-- 格式：## [YYYY-MM-DD HH:mm] [ingest|query|lint] | [標題] -->\n"
 ```
 
-### 步驟 4-3：生成 CLAUDE.md
+### 步驟 4B-3：生成 CLAUDE.md
 
 讀取 `${CLAUDE_PLUGIN_ROOT}/references/claude-md-template.md` 模板，
 將以下佔位符替換為實際值：
@@ -172,15 +194,27 @@ obsidian create vault=[vault_name] path="log.md" content="# Wiki Log\n\n<!-- app
 - `{{vault_path_windows_line}}` → 若有 Windows 路徑則替換為 `vault_path_windows: C:\...`；否則移除此整行
 - `{{plugin_version}}` → 從 plugin.json 讀取的版本號
 
-**注意**：若 Vault 根目錄已有 `CLAUDE.md`，先確認使用者是否要覆蓋，確認後才寫入。
+替換完成後，使用 obsidian CLI 寫入：
 
-### 步驟 4-4：對齊 .obsidian 設定
+```bash
+obsidian create vault=[vault_name] path="CLAUDE.md" content="[替換後的完整內容]"
+```
 
-> 注意：obsidian CLI 不支援 `.obsidian` 設定檔的讀寫，此步驟維持直接操作 JSON 檔案。
+> ⚠️ CLAUDE.md 模板內容較長，注意 content= 的 16KB 上限。若超長，先 `create` 寫入前段，再分段 `append` 剩餘部分。
 
-檢查 Vault 根目錄是否有 `.obsidian/` 資料夾：
+**注意**：若 Vault 根目錄已有 `CLAUDE.md`，先確認使用者是否要覆蓋，確認後在命令中加上 `overwrite` 參數：
 
-若**存在**，執行以下對齊：
+```bash
+obsidian create vault=[vault_name] path="CLAUDE.md" content="[替換後的完整內容]" overwrite
+```
+
+### 步驟 4B-4：對齊 .obsidian 設定
+
+> 注意：obsidian CLI 不支援 `.obsidian/` 設定檔的讀寫，此步驟嘗試直接操作 JSON 檔案。
+
+使用 `test -d [vault_path]/.obsidian` 或 `ls [vault_path]/.obsidian/` 檢查 `.obsidian/` 資料夾是否存在。若檢查命令本身失敗（例如路徑不可存取），視同「不存在」直接略過。
+
+若 `.obsidian/` **存在**，對以下三個檔案執行對齊。每個檔案先嘗試用 Edit/Write tool 寫入，若失敗則切換為引導模式。
 
 **a. `templates.json`**（確保 templates 插件指向正確資料夾）：
 ```json
@@ -206,6 +240,16 @@ obsidian create vault=[vault_name] path="log.md" content="# Wiki Log\n\n<!-- app
 
 **c. `core-plugins.json`**（確保 templates 插件啟用）：
 確保 `"templates": true`。
+
+**若任一檔案寫入失敗**，提供引導：
+
+> 無法自動修改 `.obsidian/` 設定檔。請手動確認以下設定：
+>
+> 1. 在 Obsidian 設定 → 核心插件 → 啟用「Templates」插件
+> 2. 在 Obsidian 設定 → Templates → 模板資料夾位置設為 `templates`
+> 3. 在 Obsidian 設定 → 檔案與連結 → 新建筆記存放位置設為「指定資料夾」，資料夾設為 `主題知識`
+>
+> 完成後請告訴我。
 
 若 `.obsidian/` **不存在**：略過此步驟，並在完成摘要中說明。
 
@@ -241,16 +285,6 @@ vault_path: [vault_path]
 vault_path_windows: [vault_path_windows]
 ```
 
-### Obsidian 安裝提示
-
-提示使用者：
-
-> 若尚未安裝 Obsidian 應用程式，請至 https://obsidian.md 下載安裝。
-> 安裝後，在 Obsidian 中選擇「開啟資料夾作為 Vault」，選取 `[vault_path]` 即可使用。
-
-> ⚠️ Vault 必須在 Obsidian 中開啟後，CLI 命令才能正常操作。
-> 請確認已在 Obsidian 中選擇「開啟資料夾作為 Vault」，並在 `obsidian vaults` 中確認 vault 已列出。
-
 ---
 
 ## 階段 6：完成摘要
@@ -262,7 +296,7 @@ vault_path_windows: [vault_path_windows]
 ✓ 模板檔案建立完成（templates/ 下 3 個模板：raw、來源記錄、知識筆記）
 ✓ index.md 與 log.md 空白範本已建立
 ✓ CLAUDE.md 已生成（plugin v[version]）
-✓ .obsidian 設定已對齊（或：.obsidian 尚未建立，Obsidian 首次開啟後可重新執行）
+✓ .obsidian 設定已對齊（或：.obsidian 尚未建立，Obsidian 首次開啟後可重新執行；或：因路徑限制無法自動修改，已提供手動引導）
 ✓ 全域 CLAUDE.md 已記錄此 Vault
 
 Vault 已就緒。可用的 skills：

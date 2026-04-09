@@ -223,7 +223,7 @@ obsidian append vault=[vault_name] path="log.md" content="\n## [YYYY-MM-DD HH:mm
   obsidian append vault=[vault_name] path="index.md" content="\n[YYYY-MM-DD] [[主題知識/總覽/[標題]|[標題]]] — [一行摘要（50 字以內）]（sources: N）[updated]"
   ```
 
-> 注意：index.md 採 append-only 語意，同主題可能出現多條記錄，由 lint skill 定期清理去重。index.md 由主對話串行更新，不委派 sub-agent，避免並行寫入衝突。
+> 注意：index.md 採 append-only 語意，同主題可能出現多條記錄，由 curator skill 定期清理去重。index.md 由主對話串行更新，不委派 sub-agent，避免並行寫入衝突。
 
 ---
 

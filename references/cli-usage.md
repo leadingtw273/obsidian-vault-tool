@@ -98,21 +98,21 @@ obsidian properties vault=X file="[檔名（不含 .md）]"
 
 ---
 
-## 管道 2：Claude Code 原生 Read/Edit/Write（lint 維護操作）
+## 管道 2：Claude Code 原生 Read/Edit/Write（curator 維護操作）
 
-僅限 **lint skill** 的自動修補操作使用。
+僅限 **curator skill** 的自動修補操作使用。
 
 ### 可用工具
 
 | 工具 | 用途 |
 |---|---|
-| Read | 讀取 md 檔（驗證 frontmatter、取得既有內容、lint 掃描） |
+| Read | 讀取 md 檔（驗證 frontmatter、取得既有內容、curator 掃描） |
 | Edit | 字串置換（交叉連結修補、矛盾註記從尾端搬到對應段落旁） |
-| Write | 整檔重寫（lint 的 index.md 重建、去重清理） |
+| Write | 整檔重寫（curator 的 index.md 重建、去重清理） |
 
 ### 使用邊界
 
-- **僅限 lint skill** 的自動修補操作（使用者明確觸發後）
+- **僅限 curator skill** 的自動修補操作（使用者明確觸發後）
 - archive / record-writer / wiki-writer / query skill **禁止使用** Edit / Write
 - 所有 skill / agent 都可以使用 **Read**（讀取不受限）
 

@@ -14,22 +14,34 @@
 
 ## 6 層 Fallback 流程
 
+### 目錄型主題辨識
+
+預載 `wiki_pages` 時，若某頁面 frontmatter 含 `type: topic-hub`，標記為**目錄型主題**。目錄型主題的路徑格式為 `主題知識/[類別]/[標題]/[標題].md`。
+
+匹配到目錄型主題時，merge 目標需進一步判定（見 wiki-writer Step 5C）：
+- merge 到主頁（`topic/topic.md`）
+- merge 到既有子頁（`topic/subtopic.md`）
+- 新建子頁（`topic/新子主題.md`）
+
 ### Level 1：精確檔名匹配
 
-```
-glob 主題知識/*/[標題].md
-```
+從 `wiki_pages`（Step 4 預載的既有主題頁清單）中篩選 title 完全等於新標題的項目。
 
-- 直接比對所有四個分類資料夾（實體 / 概念 / 比較 / 總覽）
+- 不分資料夾，掃描全部四個分類（實體 / 概念 / 比較 / 總覽）
+- **同時檢查** `title.md` 和 `title/title.md` 兩種路徑格式（後者為目錄型主題）
 - 命中：直接進行 upsert，不需 LLM 確認
 - 未命中：進入 Level 2
 
+### 子頁面匹配
+
+若新主題標題與某個目錄型主題的子頁面標題匹配（如新主題「Chunk 策略」匹配到 `RAG/Chunk 策略.md`），視為命中該子頁面，merge 目標為該子頁面。此匹配在 Level 1 中一併執行。
+
 ### Level 2：正規化匹配
 
-對標題執行正規化處理後比對所有既有頁檔名：
+對標題執行正規化處理後比對 `wiki_pages` 所有 title：
 
 1. **正規化步驟**：小寫化 → 去除空白 → 去除標點符號 → 處理單複數（去除尾端 `s`）
-2. 對所有 `主題知識/*/` 下的 `.md` 檔名執行相同正規化後比對
+2. 對 `wiki_pages` 所有 title 執行相同正規化後比對
 3. 命中候選頁 → **LLM 讀候選頁前 20 行**，確認是否為同一主題
    - 確認同主題：進行 upsert
    - 確認為同名異物（見下方處理規則）：直接另建新頁，加分類詞命名
@@ -47,11 +59,11 @@ glob 主題知識/*/[標題].md
 
 ### Level 3：Aliases 匹配
 
-```
-grep frontmatter aliases: 陣列中是否包含本標題
+```bash
+obsidian search vault=[vault_name] query="[新標題]"
 ```
 
-- 掃描 `主題知識/*/` 所有頁面的 frontmatter `aliases` 陣列
+- 從結果中篩選 `主題知識/` 下的頁面，Read 候選頁 frontmatter 確認 `aliases` 陣列確實包含本標題（search 為全文搜尋，必須二次確認命中位置在 aliases 中）
 - 比對時**不區分大小寫**
 - 命中：直接進行 upsert，使用既有頁的主標題，不以新標題替換
 - 未命中：進入 Level 4
