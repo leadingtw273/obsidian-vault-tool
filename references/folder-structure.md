@@ -56,6 +56,7 @@ log.md
 | `主題知識/概念/` | Wiki 層：原理、方法論、理論、設計模式 | 同上 |
 | `主題知識/比較/` | Wiki 層：對比分析兩個以上對象的整合頁 | 同上 |
 | `主題知識/總覽/` | Wiki 層：主題總論、探索結果 | 同上 |
+| `主題知識/[類別]/[主題]/` | Wiki 層：目錄型主題（由 curator 升級建立） | 含 `[主題].md` 主頁 + 子頁面，詳見 `topic-hierarchy-spec.md` |
 | `templates/` | 筆記模板 | 3 種類型：raw、來源記錄、知識筆記 |
 | `index.md` | Wiki 目錄索引，供 LLM 導航用 | 每次 archive 完成後由主對話更新 |
-| `log.md` | 時間軸日誌，append-only | 記錄所有 ingest / query / lint 事件 |
+| `log.md` | 時間軸日誌，append-only | 記錄所有 ingest / query / curator 事件 |

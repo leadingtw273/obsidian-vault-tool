@@ -181,7 +181,7 @@ obsidian create vault=[vault_name] path="index.md" content="# Wiki Index\n"
 
 **`log.md`**（時間軸日誌空白範本）：
 ```bash
-obsidian create vault=[vault_name] path="log.md" content="# Wiki Log\n\n<!-- append-only：只追加，不修改既有條目 -->\n<!-- 格式：## [YYYY-MM-DD HH:mm] [ingest|query|lint] | [標題] -->\n"
+obsidian create vault=[vault_name] path="log.md" content="# Wiki Log\n\n<!-- append-only：只追加，不修改既有條目 -->\n<!-- 格式：## [YYYY-MM-DD HH:mm] [ingest|query|curator] | [標題] -->\n"
 ```
 
 ### 步驟 4B-3：生成 CLAUDE.md
@@ -304,6 +304,6 @@ Vault 已就緒。可用的 skills：
 - record-only：只寫來源記錄至歷史紀錄，不進行知識萃取
 - knowledge-only：從指定歷史紀錄重新推知識主題，跳過 record-writer
 - query：對 Wiki 提問，讀取相關頁面產出回答，可選擇寫回主題知識/總覽/
-- lint：Wiki 健康檢查，偵測孤兒頁、缺失交叉引用、過期條目等問題
+- curator：Wiki 策展人，健康檢查 + 主題結構升級偵測與執行
 - tag-review：審查、補充、修正知識筆記的 tags，確保分類一致性
 ```

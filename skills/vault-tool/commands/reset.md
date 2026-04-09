@@ -118,7 +118,7 @@ obsidian create vault=[vault_name] path="index.md" content="# Wiki Index\n" over
 - 若**已存在**：完整保留，不做任何修改
 - 若**不存在**：建立空白時間軸日誌：
   ```
-  obsidian create vault=[vault_name] path="log.md" content="# Wiki Log\n\n<!-- append-only：只追加，不修改既有條目 -->\n<!-- 格式：## [YYYY-MM-DD HH:mm] [ingest|query|lint] | [標題] -->\n"
+  obsidian create vault=[vault_name] path="log.md" content="# Wiki Log\n\n<!-- append-only：只追加，不修改既有條目 -->\n<!-- 格式：## [YYYY-MM-DD HH:mm] [ingest|query|curator] | [標題] -->\n"
   ```
 
 ---

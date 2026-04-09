@@ -210,7 +210,7 @@ obsidian append vault=[vault_name] path="log.md" content="\n## [YYYY-MM-DD HH:mm
 
 讀取 `${CLAUDE_PLUGIN_ROOT}/references/index-spec.md` 了解條目格式。
 
-使用 obsidian CLI append 追加一行條目（index.md 為 append-only，由 lint 定期清理去重）：
+使用 obsidian CLI append 追加一行條目（index.md 為 append-only，由 curator 定期清理去重）：
 
 - **新建頁**：
   ```
@@ -252,7 +252,7 @@ index.md：[未更新 / 已更新（新增 1 個總覽條目 / 更新既有條�
 **若有遺失頁面**（Step 3 中路徑有效但檔案不存在）：在通知末尾附加：
 
 ```
-⚠️ 以下 index 條目指向不存在的頁面（建議執行 lint 修補）：
+⚠️ 以下 index 條目指向不存在的頁面（建議執行 curator 修補）：
 - [[遺失頁面路徑]]
 ```
 

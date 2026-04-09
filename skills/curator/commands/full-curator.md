@@ -125,7 +125,7 @@ obsidian unresolved vault=[vault_name]
 
 ### 2c. 過期 updated 檢測
 
-**定義**：`updated` 欄位距今超過 90 天的頁面（lint 只標記，不自動判斷是否真的「過期」，由使用者決定）。
+**定義**：`updated` 欄位距今超過 90 天的頁面（curator 只標記，不自動判斷是否真的「過期」，由使用者決定）。
 
 **執行流程**：
 
@@ -447,7 +447,7 @@ obsidian append vault=[vault_name] path="log.md" content="\n## [YYYY-MM-DD HH:mm
 
 若 `log.md` 不存在，先建立再追加：
 ```
-obsidian create vault=[vault_name] path="log.md" content="# Wiki Log\n\n<!-- append-only：只追加，不修改既有條目 -->\n<!-- 格式：## [YYYY-MM-DD HH:mm] [ingest|query|lint] | [標題] -->\n"
+obsidian create vault=[vault_name] path="log.md" content="# Wiki Log\n\n<!-- append-only：只追加，不修改既有條目 -->\n<!-- 格式：## [YYYY-MM-DD HH:mm] [ingest|query|curator] | [標題] -->\n"
 ```
 建立後再執行上方的 append 命令。
 

@@ -113,14 +113,14 @@ obsidian_cli: obsidian
 
 - **角色**：Wiki 目錄，供 LLM 在歸檔與查詢時快速定位主題頁
 - **維護者**：主對話（非 sub-agent，避免並行寫入衝突）
-- **更新時機**：每次 archive 完成後、lint 完成後
+- **更新時機**：每次 archive 完成後、curator 完成後
 - **詳細格式**：見 `references/index-spec.md`
 
 ### log.md
 
-- **角色**：時間軸日誌，append-only，記錄所有 ingest / query / lint 事件
+- **角色**：時間軸日誌，append-only，記錄所有 ingest / query / curator 事件
 - **維護者**：主對話
-- **格式前綴**：`## [YYYY-MM-DD HH:mm] [type] | [標題]`，type 為 `ingest` / `query` / `lint`
+- **格式前綴**：`## [YYYY-MM-DD HH:mm] [type] | [標題]`，type 為 `ingest` / `query` / `curator`
 - **詳細格式**：見 `references/log-spec.md`
 
 ---
@@ -130,7 +130,7 @@ obsidian_cli: obsidian
 本 Vault 的寫入操作分為兩套管道：
 
 - **管道 1（obsidian CLI）**：日常歸檔操作（archive / wiki-writer / query）使用 `create`、`append`、`eval + processFrontMatter` 等官方 CLI 命令（property:set 在 Obsidian 1.12.7 有 bug，已停用）
-- **管道 2（Claude Code Read/Edit/Write）**：lint 維護操作使用原生工具做正文修補
+- **管道 2（Claude Code Read/Edit/Write）**：curator 維護操作使用原生工具做正文修補
 
 詳細規格見 `references/cli-usage.md`。
 

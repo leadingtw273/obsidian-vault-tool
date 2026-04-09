@@ -10,7 +10,7 @@
 
 - 追蹤每次 ingest 的來源與影響範圍
 - 回溯 query 的問題與結論寫回記錄
-- 保存 lint 的健康檢查報告
+- 保存 curator 的健康檢查與結構升級報告
 - 供 LLM 用 grep 快速查看最近活動
 
 ---
@@ -31,7 +31,7 @@
 ```
 
 - `YYYY-MM-DD HH:mm`：事件發生的本地時間
-- `[type]`：事件類型，固定為 `ingest` / `query` / `lint` 三種
+- `[type]`：事件類型，固定為 `ingest` / `query` / `curator` 三種
 - `[標題]`：簡短描述（來源標題、問題摘要、或 `manual`）
 
 ---
@@ -71,10 +71,10 @@
 - 結論：僅回覆對話，未寫入 Wiki
 ```
 
-### lint 條目
+### curator 條目
 
 ```markdown
-## [YYYY-MM-DD HH:mm] lint | manual
+## [YYYY-MM-DD HH:mm] curator | manual
 - 矛盾：[[主題知識/[類別]/主題D]] vs [[主題知識/[類別]/主題E]]
 - 孤兒頁面：[[主題知識/[類別]/主題F]]
 - 缺失交叉引用：[[主題知識/[類別]/主題G]]
@@ -109,7 +109,7 @@ grep "^## \[2026-04-05" log.md
 # Wiki Log
 
 <!-- append-only：只追加，不修改既有條目 -->
-<!-- 格式：## [YYYY-MM-DD HH:mm] [ingest|query|lint] | [標題] -->
+<!-- 格式：## [YYYY-MM-DD HH:mm] [ingest|query|curator] | [標題] -->
 
 ```
 
@@ -118,10 +118,10 @@ grep "^## \[2026-04-05" log.md
 ### 寫入命令（init 時）
 
 ```bash
-obsidian create vault=[vault_name] path="log.md" content="# Wiki Log\n\n<!-- append-only：只追加，不修改既有條目 -->\n<!-- 格式：## [YYYY-MM-DD HH:mm] [ingest|query|lint] | [標題] -->\n"
+obsidian create vault=[vault_name] path="log.md" content="# Wiki Log\n\n<!-- append-only：只追加，不修改既有條目 -->\n<!-- 格式：## [YYYY-MM-DD HH:mm] [ingest|query|curator] | [標題] -->\n"
 ```
 
-### 追加條目命令（archive / query / lint 後）
+### 追加條目命令（archive / query / curator 後）
 
 ```bash
 obsidian append vault=[vault_name] path="log.md" content="## [YYYY-MM-DD HH:mm] ingest | [來源標題]\n- record: [[歷史紀錄/...]]\n- new: [[主題知識/...]]\n"

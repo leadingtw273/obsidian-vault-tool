@@ -17,7 +17,7 @@ Obsidian Vault 知識庫管理工具，作為 Claude Code Plugin 分發。
   - **knowledge-only**：只萃取知識筆記，不建立來源記錄
 - **`tag-review` skill**：標籤品質控制，由使用者手動觸發
 - **`query` skill**：對 Wiki（主題知識/）提問，讀取相關主題頁綜合回答，可選擇回填為總覽筆記
-- **`lint` skill**：Wiki 健康檢查，偵測孤兒頁面、缺失交叉引用、過期條目、index.md 一致性等問題
+- **`curator` skill**：Wiki 策展人，健康檢查（孤兒頁面、缺失交叉引用、過期條目、index.md 一致性）+ 主題結構升級偵測與執行
 
 ## 知識庫架構
 
@@ -127,9 +127,11 @@ Skills 的 symlink 不需重建，更新會直接反映。
 - 說「只要來源記錄」→ `record-only`
 - 說「檢查標籤」「tag review」→ `tag-review`（標籤品質控制）
 - 說「查一下 X」「wiki 裡有沒有」「整理一下 X 主題」→ `query`（Wiki 問答）
-- 說「lint」「wiki 體檢」「檢查 wiki」→ `lint`（健康檢查）
+- 說「lint」「wiki 體檢」「檢查 wiki」「整理 wiki」「升級主題」→ `curator`（健康檢查 + 結構演進）
 
 ## 版本
+
+`0.6.0` — Wiki 主題層級機制 + curator skill：引入動態層級（單頁→目錄結構，最深 3 層）、lint 重命名為 curator（策展人：巡檢 + 結構演進）、wiki-writer 簡化為只往上增加、record-writer 輸出樹狀結構
 
 `0.5.1` — 全盤審查修復：修正 full-archive 時序 bug（wiki-writer 讀取 raw 路徑）、放寬 vault-tool/lint allowed-tools 限制、delete hard 模式加引號與二次確認、統一 GitHub URL、修正 README 描述與 cli-usage 補齊 `files` 命令、清理死碼與過時引用
 
