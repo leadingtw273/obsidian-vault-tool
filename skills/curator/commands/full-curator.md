@@ -50,6 +50,7 @@ Wiki 為空，主題知識/ 下尚無任何頁面，無需檢查。
 - `index_stale[]`：index 過期（檔案已刪除）的條目
 - `index_mismatch[]`：index 分類不一致的條目，格式 `(index_entry, actual_directory, index_category)`
 - `upgrade_candidates[]`：符合升級條件的頁面，格式 `(page_path, section_name, trigger_reason)`
+- `hierarchy_candidates[]`：父子關係候選，格式 `(parent_path, child_path, relationship_type, reason)`
 
 ---
 
@@ -260,6 +261,36 @@ Grep 工具：
 
 ---
 
+### 2h. 父子關係偵測（跨頁面）
+
+> 規格詳見 `${CLAUDE_PLUGIN_ROOT}/references/topic-hierarchy-spec.md`「父子關係判準」段落。
+
+**定義**：兩個獨立頁面之間存在明顯的父子從屬關係，但目前以扁平結構並存，建議重組為目錄結構。
+
+**執行流程**：
+
+1. 從 `pages[]` 中篩選所有**非目錄型頁面**（frontmatter 不含 `type: topic-hub`），建立標題 + aliases 清單
+2. 對每對頁面 (A, B)，依「父子關係判準」的歸併條件評估：
+   - 工具屬性：A 是 B 的插件/擴充/CLI/SDK？
+   - 組成關係：A 是 B 的核心組件或子系統？
+   - 實例關係：A 是 B 的具體實作？
+3. 符合條件者，判定父子方向（較廣泛者為父）
+4. 排除條件過濾：
+   - 多重父節點 → 跳過
+   - 子大於父 → 跳過
+   - 方向不明確 → 跳過
+   - 深度超限（歸併後超過 3 層）→ 跳過
+5. **已在目錄中的子頁面不重複偵測**：若 A 已在 B 的目錄下（路徑包含 B 的資料夾），跳過
+
+**記錄**：將候選組存入 `hierarchy_candidates[]`，格式 `(parent_path, child_path, relationship_type, reason)`。
+
+**輔助信號**（提高判定信心，非必要條件）：
+- 子頁面的正文中引用了父頁面的 wikilink（表示從屬意識已存在）
+- 子頁面的標題包含父頁面的標題作為前綴或後綴
+- 子頁面的 `tags` 包含父頁面的標題作為標籤
+
+---
+
 ## Step 3：tag-review 整合（選擇性）
 
 > **前置說明**：tag-review 是獨立 skill，非 agent，無法透過 `subagent_type` 參數直接委派 Agent tool 呼叫。因此本 Step 採用「提示使用者」的方式整合，而非自動執行。
@@ -388,6 +419,18 @@ Grep 工具：
 
 ---
 
+## 8. 父子關係候選（N 組）
+
+以下獨立頁面建議重組為目錄結構：
+
+- [[主題知識/實體/Obsidian]] ← [[主題知識/實體/Obsidian CLI]]（工具屬性：CLI 是 Obsidian 的命令行介面）
+- [[主題知識/概念/XXX]] ← [[主題知識/概念/YYY]]（組成關係：YYY 是 XXX 的核心組件）
+...
+
+**建議**：執行自動修補將父頁面升級為目錄結構，並將子頁面移入。重組流程見 `references/topic-hierarchy-spec.md`。
+
+---
+
 ## 總結
 
 | 類別 | 數量 |
@@ -399,6 +442,7 @@ Grep 工具：
 | 建議新建概念頁 | N |
 | index 問題（遺漏 + 過期 + 錯誤） | N |
 | 結構升級候選 | N |
+| 父子關係候選 | N |
 
 **整體健康度**：[評級]
 
@@ -414,11 +458,12 @@ Grep 工具：
 
 1. **未解決矛盾**（影響知識準確性，優先手動修復）
 2. **結構升級候選**（可自動修補，改善知識組織）
-3. **index 過期條目**（可自動修補，低風險）
-4. **缺失交叉引用**（可部分自動修補，改善可導覽性）
-5. **孤兒頁面**（需人工判斷是否刪除或補充引用）
-6. **可能過期頁面**（視使用者是否有新來源而定）
-7. **建議新建概念頁**（建議性質，視需求決定）
+3. **父子關係候選**（可自動修補，需使用者確認，改善知識組織）
+4. **index 過期條目**（可自動修補，低風險）
+5. **缺失交叉引用**（可部分自動修補，改善可導覽性）
+6. **孤兒頁面**（需人工判斷是否刪除或補充引用）
+7. **可能過期頁面**（視使用者是否有新來源而定）
+8. **建議新建概念頁**（建議性質，視需求決定）
 ````
 
 > 注意：若某類別問題為 0，在報告中保留標題但寫「無問題。」，不省略整個區塊，確保報告結構完整。
@@ -440,7 +485,7 @@ date '+%Y-%m-%d %H:%M'
 **Append 方法**：使用 obsidian CLI append 直接追加至 log.md：
 
 ```
-obsidian append vault=[vault_name] path="log.md" content="\n## [YYYY-MM-DD HH:mm] curator | manual\n- 掃描頁面：N\n- 孤兒頁面：[[主題知識/實體/XXX]], [[主題知識/概念/YYY]]\n- 矛盾：[[主題知識/概念/AAA]] 2 處\n- 缺失交叉引用：N 處\n- index 問題：N 個（遺漏 M + 過期 K + 錯誤 L）\n- 升級候選：N 個\n- 整體健康度：[評級]"
+obsidian append vault=[vault_name] path="log.md" content="\n## [YYYY-MM-DD HH:mm] curator | manual\n- 掃描頁面：N\n- 孤兒頁面：[[主題知識/實體/XXX]], [[主題知識/概念/YYY]]\n- 矛盾：[[主題知識/概念/AAA]] 2 處\n- 缺失交叉引用：N 處\n- index 問題：N 個（遺漏 M + 過期 K + 錯誤 L）\n- 升級候選：N 個\n- 父子關係候選：N 組\n- 整體健康度：[評級]"
 ```
 
 > 注意：實際執行時將佔位符替換為真實數值；若某項目為 0 則省略該行，直接拼接其他行。`\"` 跳脫雙引號，若 content= 超過 16KB 則分多次 append。
@@ -464,6 +509,7 @@ obsidian create vault=[vault_name] path="log.md" content="# Wiki Log\n\n<!-- app
 2. **缺失交叉引用**（精確字串置換，限正文中出現的純文字主題標題）→ 使用管道 2 Edit 工具做字串置換
 3. **未解決矛盾的搬移**（將尾端矛盾註記搬移至正文對應段落旁）→ 使用管道 2 Read/Edit 工具
 4. **結構升級**（將符合升級條件的單頁主題升級為目錄結構）→ 使用管道 2 + Bash（mkdir/mv）
+5. **父子關係重組**（將獨立子頁面移入父主題目錄）→ 使用管道 2 + Bash（mkdir/mv/Edit）
 
 **不可自動修補的項目**（只列出建議，需使用者手動處理）：
 - 孤兒頁面（需判斷是否刪除或補充引用語意）
@@ -481,6 +527,7 @@ obsidian create vault=[vault_name] path="log.md" content="# Wiki Log\n\n<!-- app
 1. index.md 一致性（[遺漏 M 個] + [過期 K 個]）→ 使用 Write 工具整檔重建 index.md
 2. 缺失交叉引用（N 處）→ 對符合安全條件的位置使用 Edit 工具自動置換為 wikilink
 3. 結構升級（N 個頁面）→ 將單頁升級為目錄結構（topic/topic.md + 子頁面）
+4. 父子關係重組（N 組）→ 將獨立子頁面移入父主題目錄（需逐一確認）
 
 是否執行自動修補？
   - 輸入「全部」執行所有項目
@@ -580,6 +627,55 @@ obsidian create vault=[vault_name] path="log.md" content="# Wiki Log\n\n<!-- app
 - 若升級候選位於已有目錄結構中（如 `RAG/Chunk 策略.md` 的章節需要再拆分），檢查是否超過 3 層
 - 超過 3 層 → 不建立子目錄，改為在 `主題知識/[category]/` 下建立獨立頂級頁面，在原位置保留 wikilink 引用
 
+### 自動修補：父子關係重組（管道 2 + Bash）
+
+> 重組流程詳見 `${CLAUDE_PLUGIN_ROOT}/references/topic-hierarchy-spec.md`。
+
+**前置確認**：每組父子候選需使用者逐一確認（或批次確認），不自動執行。確認時顯示：
+
+```
+父子關係重組確認：
+  1. [[主題知識/實體/Obsidian]] ← [[主題知識/實體/Obsidian CLI]]（CLI 是 Obsidian 的命令行介面）
+  2. ...
+
+是否執行？（輸入「全部」/編號/「n」）
+```
+
+**重組流程**（以 Obsidian ← Obsidian CLI 為例）：
+
+1. **檢查父頁面是否已有目錄結構**：
+   - 已有 `type: topic-hub` → 跳至步驟 3
+   - 尚未有 → 執行步驟 2
+
+2. **升級父頁面為目錄結構**（同 2g 的升級流程）：
+   ```bash
+   mkdir -p [vault_path]/主題知識/實體/Obsidian
+   mv [vault_path]/主題知識/實體/Obsidian.md [vault_path]/主題知識/實體/Obsidian/Obsidian.md
+   ```
+   使用 Read + Edit 工具更新父頁面 frontmatter：加入 `type: topic-hub`、`children: []`、`aliases`
+
+3. **移動子頁面至父目錄**：
+   ```bash
+   mv [vault_path]/主題知識/實體/Obsidian CLI.md [vault_path]/主題知識/實體/Obsidian/Obsidian CLI.md
+   ```
+
+4. **更新父頁面的 `children` 陣列**：
+   使用 Edit 工具在 `children:` 中追加 `"[[主題知識/實體/Obsidian/Obsidian CLI|Obsidian CLI]]"`
+
+5. **更新父頁面正文**：
+   若正文中尚無「子頁面」導航區塊，在適當位置插入：
+   ```markdown
+   ## 子頁面
+
+   - [[Obsidian CLI]] — Obsidian 官方命令行工具
+   ```
+
+6. **更新 index.md**：使用 Edit 工具將 index.md 中子頁面和父頁面的路徑更新為新路徑
+
+7. **Wikilink 處理**：由於 Obsidian 最短路徑解析，大部分 `[[Obsidian CLI]]` 連結會自動解析到新位置。僅在 Vault 中存在同名檔案時需手動修正。
+
+**深度限制**：重組前檢查目標路徑深度，超過 3 層則跳過並在報告中警告。
+
 ### 修補完成通知
 
 ```
@@ -588,6 +684,7 @@ obsidian create vault=[vault_name] path="log.md" content="# Wiki Log\n\n<!-- app
 - index.md：已使用 Write 工具整檔重建（新增 M 筆、移除 K 筆過期條目）
 - 交叉引用：已使用 Edit 工具修補 N 處（略過 K 處不符安全條件）
 - 結構升級：已將 N 個頁面升級為目錄結構（共建立 M 個子頁面）
+- 父子關係重組：已重組 N 組（共移動 M 個檔案）
 
 以下交叉引用需手動確認：
 - [[主題知識/實體/XXX]] 第 12 行：「Claude」可能指 Anthropic 的 Claude，也可能是其他用法，請手動確認

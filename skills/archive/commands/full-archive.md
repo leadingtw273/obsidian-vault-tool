@@ -280,9 +280,91 @@ raw_archived_path：[raw/archived/[檔名].md]
 
 ---
 
+## Step 1.6：層級映射（Hierarchy Mapping）（主對話執行）
+
+> 在去重後、呼叫 wiki-writer 前，偵測主題間及主題與既有頁面的父子關係，為每個主題分配最終寫入路徑。
+> 確保 wiki-writer 直接建檔在正確位置，避免事後搬移。由主對話集中執行，避免並行 wiki-writer 的競態問題。
+
+### 1.6.1 收集輸入
+
+- Step 1.5 產出的 `deduped_topics[]`（去重後的獨立主題清單）
+- 現有 Vault 的主題頁清單：使用 Glob `[vault_path]/主題知識/**/*.md`，提取每個頁面的 `title`、`wiki_category`、frontmatter 中是否有 `type: topic-hub`
+
+### 1.6.2 偵測父子關係
+
+依 `references/topic-hierarchy-spec.md` 的「父子關係判準」，對以下兩組配對進行評估：
+
+**a. 新主題之間**：`deduped_topics[]` 內部，兩兩比對是否存在父子關係。
+**b. 新主題 vs 既有頁面**：每個新主題是否為某既有頁面的子實體。
+
+對每個候選配對：
+1. 確認符合歸併條件（工具屬性 / 組成關係 / 實例關係）
+2. 檢查排除條件（多重父節點 / 子大於父 / 方向不明確 / 深度超限）
+3. 判定父子方向
+
+### 1.6.3 分配最終路徑與目錄準備
+
+對每個去重後的獨立主題，分配 `target_path`：
+
+**無父子關係（預設）**：
+```
+target_path = 主題知識/[wiki_category]/[標題].md
+```
+
+**新主題為既有頁面的子實體**：
+
+1. 檢查父頁面是否已有目錄結構（`type: topic-hub`）：
+   - **已有目錄** → `target_path = 主題知識/[cat]/[父]/[子].md`
+   - **尚未有目錄** → 主對話先執行目錄準備：
+     ```bash
+     mkdir -p [vault_path]/主題知識/[cat]/[父]
+     mv [vault_path]/主題知識/[cat]/[父].md [vault_path]/主題知識/[cat]/[父]/[父].md
+     ```
+     然後使用 Read + Edit 工具在父頁面 frontmatter 中加入 `type: topic-hub` 和 `children: []`。
+     最後分配 `target_path = 主題知識/[cat]/[父]/[子].md`
+
+2. 更新 `index.md` 中父頁面的路徑（若已執行 mv）
+
+**本批次內部父子關係**（兩個新主題構成父子）：
+
+1. 父主題按正常路徑建立（可能需先建目錄）
+2. 子主題分配到父目錄下
+3. **呼叫順序**：父主題的 wiki-writer **先執行**（不與子主題並行），完成後再呼叫子主題的 wiki-writer。這確保父目錄和 topic-hub frontmatter 已就緒。
+
+### 1.6.4 深度檢查
+
+分配路徑前計算目錄深度（`主題知識/` 算第 0 層）：
+- 第 1 層：`主題知識/[category]/[topic].md`（正常）
+- 第 2 層：`主題知識/[category]/[topic]/[subtopic].md`（允許）
+- 第 3 層：`主題知識/[category]/[topic]/[subtopic]/[sub-subtopic].md`（允許，最深）
+- 超過 3 層 → 強制為獨立頂級主題，不歸入父目錄
+
+### 1.6.5 產出層級映射
+
+記錄 `hierarchy_map[]`，每個項目包含：
+- 主題標題
+- `target_path`（最終寫入路徑）
+- 父主題標題（若有）
+- `needs_parent_upgrade`（布林值，是否需要升級既有父頁面為目錄結構）
+
+### 1.6.6 輸出層級映射摘要
+
+```
+層級映射：[N] 個主題中 [M] 個識別為子主題
+- [子主題A] → [父主題X]/[子主題A].md（父主題已有目錄結構）
+- [子主題B] → [父主題Y]/[子主題B].md（需升級父頁面 ✓ 已完成）
+```
+
+若無父子關係偵測到，輸出：
+```
+層級映射：全部為獨立主題，無父子關係
+```
+
+---
+
 ## Step 2：解析主題列表 → 並行呼叫 wiki-writer（upsert 模式）
 
-對 Step 1.5 去重後的主題清單，並行呼叫 wiki-writer agents。
+對 Step 1.6 層級映射後的主題清單，並行呼叫 wiki-writer agents。
 
 > **重要**：wiki-writer **只做寫入**（新建頁面或合併內容），不執行結構升級。子主題以 `##` 章節形式寫入母主題頁面。結構升級由 curator skill 在後續巡檢時處理。
 
@@ -292,9 +374,13 @@ Agent tool，`subagent_type: "obsidian-vault-tool:wiki-writer"`。
 
 在**單一訊息**中對所有獨立主題同時發出 Agent tool 呼叫。
 
+> **父子主題的呼叫順序**：若 Step 1.6 識別出本批次內部的父子關係，父主題的 wiki-writer **先執行**，確認 topic-hub frontmatter 已寫入後，再於下一輪並行呼叫子主題的 wiki-writer。其餘無父子關係的主題照常並行。
+
 **每個 agent 的 Prompt**：
 ```
 **主題**：[主題標題]
+**寫入路徑**：[target_path]（由 Step 1.6 分配；若為子主題，路徑含父目錄）
+**父主題**：[父主題標題]（若為子主題；wiki-writer 應在正文中建立與父主題的 wikilink）
 **子主題列表**：（若有子主題）
   - [子主題A]：[獨立性理由]
   - [子主題B]：[獨立性理由]
