@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+#
+# pre-commit-hook.sample — Git pre-commit hook 範本（不預設啟用）
+#
+# 在每次 commit 前自動執行 lint-specs.sh，確保跨文件一致性。
+#
+# 啟用方式：
+#   cp scripts/pre-commit-hook.sample .git/hooks/pre-commit
+#   chmod +x .git/hooks/pre-commit
+#
+# 停用方式：
+#   rm .git/hooks/pre-commit
+#
+# 或在 commit 時加 --no-verify 跳過單次檢查：
+#   git commit --no-verify -m "WIP"
+
+set -e
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+LINT_SCRIPT="$REPO_ROOT/scripts/lint-specs.sh"
+
+if [ ! -f "$LINT_SCRIPT" ]; then
+    echo "⚠️  lint-specs.sh 不存在，跳過檢查"
+    exit 0
+fi
+
+echo "🔍 執行 spec 一致性檢查..."
+if ! bash "$LINT_SCRIPT"; then
+    echo
+    echo "❌ Lint 檢查未通過，請修正後重新 commit。"
+    echo "   如需強制 commit（不建議），使用：git commit --no-verify"
+    exit 1
+fi
+
+exit 0

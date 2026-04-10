@@ -77,7 +77,8 @@ color: green
 
 ### Step 4：搜尋既有主題頁（6 層 fallback）
 
-完整規格見 `${CLAUDE_PLUGIN_ROOT}/references/topic-matching-spec.md`。依序執行：
+完整規格見 `${CLAUDE_PLUGIN_ROOT}/references/topic-matching-spec.md`。
+快速決策表見 `${CLAUDE_PLUGIN_ROOT}/references/decision-tables-spec.md` 決策表 A。依序執行：
 
 **預載：取得既有主題頁清單**
 
@@ -173,10 +174,16 @@ obsidian search vault=[vault_name] query="[[主題標題]]"
 
 **A. 無既有頁 → 新建流程（一律建單頁）**
 
+> 完整決策邏輯見 `${CLAUDE_PLUGIN_ROOT}/references/decision-tables-spec.md` 決策表 B（寫入路徑決定）。
+
 - 路徑決定優先順序：
   1. Step 4 匹配到既有頁 → 使用既有頁路徑（最高優先）
   2. 呼叫方提供了 `**寫入路徑**` → 使用該路徑（由主對話的 Step 1.6 層級映射決定）
   3. 以上皆無 → 預設為 `主題知識/[wiki_category]/[主題標題].md`
+- **路徑安全驗證**（依 `${CLAUDE_PLUGIN_ROOT}/references/path-safety-spec.md`）：
+  - 最終路徑必須落在 `主題知識/` 下（白名單驗證）
+  - 確認 `[主題標題]` 已通過 REJECT 檢查（無 `../`、絕對路徑等）
+  - 若驗證失敗 → 依 path-safety-spec 格式熔斷中止，不寫入檔案
 - 正文：使用 Step 2 萃取的知識草稿（已套用 Step 6 交叉連結置換），子主題以 `##` 章節形式寫入
 - `date` 與 `updated` 同為今日
 - `sources` 初始含 1 個 wikilink：`"[[來源記錄檔名]]"`
