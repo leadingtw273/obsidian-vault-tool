@@ -3,6 +3,9 @@
 掃描 `raw/` 目錄，對每個待歸檔檔案呼叫 record-writer 建立來源記錄、wiki-writer upsert 知識頁，
 完成後更新 index.md 與 log.md，並將已成功歸檔的 raw 原檔移至 `raw/archived/`。
 
+> **步驟編號慣例**：主步驟以整數編號（Step 0–7），條件式前置步驟用負數（Step -1），
+> 插入式步驟用小數（Step 0.5、1.5、1.6）表示「在前一步驟之後、下一步驟之前」的邏輯位置。
+
 ---
 
 ## Step -1：對話歸檔預處理（條件式）
@@ -143,6 +146,11 @@ obsidian append vault=[vault_name] path="raw/conversation-[TIMESTAMP].md" conten
 
 ## Step 0：掃描 raw/ 目錄
 
+**前置預檢**：執行 `obsidian --version` 確認 obsidian CLI 可用。若命令失敗，輸出以下提示後終止：
+```
+⛔ obsidian CLI 不可用，請先安裝：npm install -g obsidian-cli
+```
+
 使用 Glob 工具掃描：`[vault_path]/raw/*.md`
 
 **分支處理**：
@@ -220,7 +228,7 @@ raw_file_path：[絕對路徑]
 raw_archived_path：[raw/archived/[檔名].md]
 來源記錄路徑：[完整路徑]
 來源記錄檔名：[序號_概述]
-知識主題列表：
+知識主題樹：
 1. [主題一]
 2. [主題二]
 來源類型：[content_type]
@@ -233,7 +241,7 @@ raw_archived_path：[raw/archived/[檔名].md]
 - `raw_file_path`（供 Step 6 移動至 raw/archived/ 用）
 - `raw_archived_path`（供 Step 2 傳給 wiki-writer 讀取原文用）
 - `來源記錄路徑`、`來源記錄檔名`
-- `知識主題列表`
+- `知識主題樹`
 - `來源類型`（`content_type`）
 - 執行紀錄（存為 `record_writer_logs[]`）
 
@@ -420,10 +428,10 @@ Agent tool，`subagent_type: "obsidian-vault-tool:wiki-writer"`。
 
 ## Step 3：驗證（主對話執行）
 
-對每篇 Step 2 新建或 merge 的知識筆記，使用 Read 工具讀取前 20 行，確認：
+對每篇 Step 2 新建或 merge 的知識筆記，使用 Read 工具讀取前 30 行（確保涵蓋完整 frontmatter），確認：
 
 1. 第 1 行為 `---`
-2. 存在第二個 `---`（frontmatter 結束）
+2. 第 2 行之後存在第二個 `---`（frontmatter 結束標記）
 3. `sources:` 陣列每項被雙引號包覆（格式：`"[[來源記錄檔名]]"`）
 4. `wiki_category:` 值有效（限：實體/概念/比較/總覽）
 5. `updated:` 格式正確（`YYYY-MM-DD`）
@@ -434,6 +442,10 @@ Agent tool，`subagent_type: "obsidian-vault-tool:wiki-writer"`。
 ```
 
 2 次重試後仍失敗，**對該篇記錄為失敗，繼續處理其他篇**，最後在完成通知統一回報。
+
+> **重試預算說明**：wiki-writer 內部有自己的驗證重試（最多 3 次，見 wiki-writer Step 9）。
+> 此處的外部重試是「整個 wiki-writer agent 重新呼叫」，僅在內部重試全數耗盡後仍回報失敗時觸發。
+> 最壞情況：1 次初始呼叫 + 2 次外部重試 = 3 次 wiki-writer 呼叫，每次內部最多 4 次寫入，總寫入上限 12 次。
 
 ---
 
@@ -478,7 +490,7 @@ obsidian append vault=[vault_name] path="index.md" content="\n[YYYY-MM-DD] [[主
 - wiki-writer 回傳「**merge**」的主題 → 歸入 `- updated:` 行
 
 ```bash
-obsidian append vault=[vault_name] path="log.md" content="\n## [YYYY-MM-DD HH:mm] ingest | [來源標題]\n- record: [[歷史紀錄/[type]/[YYYY-MM-DD]/[序號]_[概述]]]\n- new: [[主題知識/[類別]/主題A]], [[主題知識/[類別]/主題B]]\n- updated: [[主題知識/[類別]/主題C]]"
+obsidian append vault=[vault_name] path="log.md" content="\n## [YYYY-MM-DD HH:mm] ingest | [來源標題]\n- record: [[歷史紀錄/[來源類型目錄]/[YYYY-MM-DD]/[序號]_[概述]]]\n- new: [[主題知識/[類別]/主題A]], [[主題知識/[類別]/主題B]]\n- updated: [[主題知識/[類別]/主題C]]"
 ```
 
 若無新建主題則省略 `- new:` 行；若無更新主題則省略 `- updated:` 行。
@@ -487,7 +499,7 @@ obsidian append vault=[vault_name] path="log.md" content="\n## [YYYY-MM-DD HH:mm
 ```markdown
 
 ## [YYYY-MM-DD HH:mm] ingest | [來源標題]
-- record: [[歷史紀錄/[type]/[YYYY-MM-DD]/[序號]_[概述]]]
+- record: [[歷史紀錄/[來源類型目錄]/[YYYY-MM-DD]/[序號]_[概述]]]
 - new: [[主題知識/[類別]/主題A]], [[主題知識/[類別]/主題B]]
 - updated: [[主題知識/[類別]/主題C]]
 ```
@@ -509,6 +521,7 @@ obsidian append vault=[vault_name] path="log.md" content="\n## [YYYY-MM-DD HH:mm
 
 移動命令：
 ```bash
+mkdir -p [vault_path]/raw/archived
 mv [vault_path]/raw/[檔名].md [vault_path]/raw/archived/[檔名].md
 ```
 

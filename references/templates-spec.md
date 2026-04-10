@@ -87,4 +87,5 @@ author:
 - `sources` 為陣列，每次 upsert 追加新來源 wikilink，格式 `"[[來源記錄檔名]]"`
 - `wiki_category` 由 wiki-writer 依 `references/wiki-category-spec.md` 判定後填入
 - `category` 由 `tags[0]` 第一層動態決定（如 `技術/AI/LLM` → `技術`）
+- `type` 與 `children` 不在模板中預設。僅由 curator skill 在結構升級時加入：`type: topic-hub` 表示目錄型主題，`children: []` 列出子頁面 wikilink
 - raw 模板的 `content_type` 未填時，record-writer 依 source URL 自動推斷（見 `agents/record-writer.md`）

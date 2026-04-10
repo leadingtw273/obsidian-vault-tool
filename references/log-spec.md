@@ -42,14 +42,14 @@
 
 ```markdown
 ## [YYYY-MM-DD HH:mm] ingest | [來源標題]
-- record: [[歷史紀錄/[type]/[YYYY-MM-DD]/[序號]_[概述]]]
+- record: [[歷史紀錄/[來源類型目錄]/[YYYY-MM-DD]/[序號]_[概述]]]
 - new: [[主題知識/[類別]/主題A]], [[主題知識/[類別]/主題B]]
 - updated: [[主題知識/[類別]/主題C]]
 ```
 
 | 欄位 | 說明 |
 |------|------|
-| `record:` | 本次 record-writer 寫入的來源記錄 wikilink |
+| `record:` | 本次 record-writer 寫入的來源記錄 wikilink。`[來源類型目錄]` 為中文目錄名，對應 `content_type`：`conversation` → `對話`、`youtube` → `YouTube`、`fb-post` → `Facebook`、`article` → `文章`、`pdf` → `文件`、`webpage` → `網頁` |
 | `new:` | 本次新建的知識頁 wikilink 列表（逗號分隔） |
 | `updated:` | 本次 upsert 更新的既有知識頁 wikilink 列表 |
 

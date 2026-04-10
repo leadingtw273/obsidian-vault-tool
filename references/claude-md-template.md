@@ -103,7 +103,7 @@ obsidian_cli: obsidian
 | `比較` | 對比分析兩個以上實體或概念的整合頁 | Claude vs GPT、RAG vs LLM Wiki |
 | `總覽` | 主題總論、探索結果、橫跨多主題的綜論 | 2026 AI 趨勢、Obsidian 生態圈總論 |
 
-判定流程由 `wiki-writer` agent 在 Step 3 執行，依序確認：具體對象 → 抽象原理 → 對比分析 → 橫跨綜論。
+判定流程由 `wiki-writer` agent 在 Step 3 執行，依序確認：具體對象 → 對比分析 → 橫跨綜論 → 抽象原理（兜底）。
 
 ---
 

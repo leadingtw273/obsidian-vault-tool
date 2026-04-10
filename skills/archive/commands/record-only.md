@@ -23,6 +23,20 @@ raw/ 目錄有 N 個待處理檔案：
 
 ---
 
+## Step 0.5：預分配序號（主對話執行）
+
+> 解決並行 record-writer 的序號競態問題。主對話在呼叫 record-writer 前，先掃描目標目錄的現有序號，為每個 raw 檔預分配遞增序號。
+
+1. **讀取所有 raw 檔的 content_type**：對 Step 0 確定的檔案清單，逐一用 Read 工具讀取 frontmatter，提取 `content_type`（若無則依 `source` 推斷，規則同 record-writer Step 3）
+
+2. **按 content_type 分組**：將 raw 檔按 content_type 分組，對照類型目錄（同 full-archive Step 0.5 對照表）
+
+3. **掃描現有序號**：對每個需要用到的類型目錄，用 Glob 工具掃描 `[vault_path]/歷史紀錄/[類型目錄]/[今日日期]/*.md`，取最大序號
+
+4. **預分配序號**：從最大序號 + 1 開始，依同組內的 raw 檔順序遞增分配
+
+---
+
 ## Step 1：對每個 raw 檔並行呼叫 record-writer
 
 Agent tool，`subagent_type: "obsidian-vault-tool:record-writer"`。
@@ -35,6 +49,7 @@ Agent tool，`subagent_type: "obsidian-vault-tool:record-writer"`。
 **Vault 路徑**：[vault_path]
 **Vault 名稱**：[vault_name]
 **今日日期**：[YYYY-MM-DD]
+**指定序號**：[N]（由 Step 0.5 預分配）
 ```
 
 **等待輸出並解析**：
@@ -42,7 +57,7 @@ Agent tool，`subagent_type: "obsidian-vault-tool:record-writer"`。
 raw_file_path：[絕對路徑]
 來源記錄路徑：[完整路徑]
 來源記錄檔名：[序號_概述]
-知識主題列表：（本模式不使用，忽略）
+知識主題樹：（本模式不使用，忽略）
 來源類型：[content_type]
 
 ## 執行紀錄
@@ -70,7 +85,7 @@ raw_file_path：[絕對路徑]
 對每個 Step 1 成功的 raw 檔，使用 `obsidian append` 直接追加 record-only 類型的 ingest 條目：
 
 ```bash
-obsidian append vault=[vault_name] path="log.md" content="\n## [YYYY-MM-DD HH:mm] ingest | [來源標題] (record-only)\n- record: [[歷史紀錄/[type]/[YYYY-MM-DD]/[序號]_[概述]]]"
+obsidian append vault=[vault_name] path="log.md" content="\n## [YYYY-MM-DD HH:mm] ingest | [來源標題] (record-only)\n- record: [[歷史紀錄/[來源類型目錄]/[YYYY-MM-DD]/[序號]_[概述]]]"
 ```
 
 **時間戳記**：執行 `date '+%Y-%m-%d %H:%M'` 取得當前本地時間。
@@ -79,7 +94,7 @@ obsidian append vault=[vault_name] path="log.md" content="\n## [YYYY-MM-DD HH:mm
 ```markdown
 
 ## [YYYY-MM-DD HH:mm] ingest | [來源標題] (record-only)
-- record: [[歷史紀錄/[type]/[YYYY-MM-DD]/[序號]_[概述]]]
+- record: [[歷史紀錄/[來源類型目錄]/[YYYY-MM-DD]/[序號]_[概述]]]
 ```
 
 > 本模式僅有 `record:` 行，無 `new:` 或 `updated:` 行。
@@ -94,6 +109,7 @@ obsidian append vault=[vault_name] path="log.md" content="\n## [YYYY-MM-DD HH:mm
 對 Step 1 成功（record-writer 輸出完整）的 raw 檔，執行移動：
 
 ```bash
+mkdir -p [vault_path]/raw/archived
 mv [vault_path]/raw/[檔名].md [vault_path]/raw/archived/[檔名].md
 ```
 
@@ -109,7 +125,7 @@ mv [vault_path]/raw/[檔名].md [vault_path]/raw/archived/[檔名].md
 已完成來源記錄（處理 [N] 個 raw 檔）：
 
 成功：[M] 個
-- [[序號_概述]] → 歷史紀錄/[type]/[date]/[序號]_[概述].md
+- [[序號_概述]] → 歷史紀錄/[來源類型目錄]/[date]/[序號]_[概述].md
 
 失敗：[K] 個
 - [raw 檔名]：[失敗原因]（原檔保留在 raw/）

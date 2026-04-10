@@ -203,8 +203,8 @@ author: [從 raw frontmatter]
 ## 輸出
 
 ```
-raw_file_path: [raw 檔絕對路徑，供主對話後續移動至 raw/archived/ 用]
-raw_archived_path: [歸檔後的 raw/archived/ 相對路徑，例如 raw/archived/20260405-some-article.md，供 wiki-writer 讀取原文用]
+raw_file_path：[raw 檔絕對路徑，供主對話後續移動至 raw/archived/ 用]
+raw_archived_path：[歸檔後的 raw/archived/ 相對路徑，例如 raw/archived/20260405-some-article.md，供 wiki-writer 讀取原文用]
 來源記錄路徑：[完整路徑]
 來源記錄檔名：[序號_概述]
 知識主題樹：

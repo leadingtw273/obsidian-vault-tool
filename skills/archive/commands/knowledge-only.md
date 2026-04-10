@@ -72,6 +72,7 @@ Agent tool，`subagent_type: "obsidian-vault-tool:wiki-writer"`。
 **每個 agent 的 Prompt**：
 ```
 **主題**：[主題標題]
+**寫入路徑**：主題知識/[wiki_category]/[主題標題].md（預設路徑，wiki-writer 可依 Step 4 匹配結果調整）
 **來源記錄檔名**：[序號_概述]（從歷史紀錄路徑提取）
 **來源記錄路徑**：[歷史紀錄完整路徑]
 **raw_archived_path**：[raw/archived/[原始檔名].md]（從 Step 1 反向連結提取；若無則省略此欄位）
@@ -79,6 +80,7 @@ Agent tool，`subagent_type: "obsidian-vault-tool:wiki-writer"`。
 **Vault 路徑**：[vault_path]
 **Vault 名稱**：[vault_name]
 **今日日期**：[YYYY-MM-DD]
+**本批次其他主題**：[列出本批次所有其他主題標題，每行一個；若僅一個主題則省略此欄位]
 ```
 
 **等待輸出並解析**：
@@ -94,10 +96,10 @@ Agent tool，`subagent_type: "obsidian-vault-tool:wiki-writer"`。
 
 ## Step 3：驗證（主對話執行）
 
-對每篇新建或 merge 的知識筆記，使用 Read 工具讀取前 20 行，確認：
+對每篇新建或 merge 的知識筆記，使用 Read 工具讀取前 30 行（確保涵蓋完整 frontmatter），確認：
 
 1. 第 1 行為 `---`
-2. 存在第二個 `---`（frontmatter 結束）
+2. 第 2 行之後存在第二個 `---`（frontmatter 結束標記）
 3. `sources:` 陣列每項被雙引號包覆
 4. `wiki_category:` 值有效（限：實體/概念/比較/總覽）
 5. `updated:` 格式正確（`YYYY-MM-DD`）
@@ -108,6 +110,8 @@ Agent tool，`subagent_type: "obsidian-vault-tool:wiki-writer"`。
 ```
 
 2 次重試後仍失敗，**對該篇記錄為失敗，繼續處理其他篇**，最後在完成通知統一回報。
+
+> **重試預算說明**：wiki-writer 內部有自己的驗證重試（最多 3 次）。此處外部重試是「整個 wiki-writer agent 重新呼叫」，最壞情況總寫入上限 12 次（3 次呼叫 × 每次 4 次寫入）。
 
 ---
 

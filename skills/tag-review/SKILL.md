@@ -34,3 +34,13 @@ allowed-tools: ["Read", "Glob", "Grep", "Bash"]
 ## 確認流程
 
 輸出建議後等待使用者確認，確認後用 obsidian CLI 寫入。
+
+CLI 安全規則見 `${CLAUDE_PLUGIN_ROOT}/references/cli-usage.md`。
+
+寫入方法（使用 `eval + processFrontMatter`，同 wiki-writer Step 5B）：
+
+```bash
+obsidian eval vault=[vault_name] code="app.fileManager.processFrontMatter(app.vault.getAbstractFileByPath('[頁面路徑]'), fm => { fm.tags = ['技術/AI/LLM','技術','AI','LLM','RAG']; fm.category = '技術'; })"
+```
+
+寫入完成後用 Read 工具確認 frontmatter 已正確更新。

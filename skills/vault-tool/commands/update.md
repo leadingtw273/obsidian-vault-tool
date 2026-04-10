@@ -83,7 +83,7 @@ templates/
 | `來源記錄.md` | 不存在則建立 |
 | `知識筆記.md` | 不存在則建立；若已存在但 frontmatter 缺少 `updated`、`aliases`、`sources`、`wiki_category` 欄位（舊版 schema），則更新為新版模板內容 |
 
-新版 **`知識筆記.md`** frontmatter 格式（含新欄位）：
+新版 **`知識筆記.md`** frontmatter 格式（需與 `references/templates-spec.md` 一致）：
 ```yaml
 ---
 title:
@@ -100,6 +100,8 @@ content_type:
 author:
 ---
 ```
+
+> 注意：`type` 與 `children` 欄位不在模板中預設，由 curator skill 在結構升級時動態加入。
 
 ---
 
@@ -144,7 +146,7 @@ obsidian create vault=[vault_name] path="log.md" content="# Wiki Log\n\n<!-- app
 ## 完成摘要
 
 ```
-✓ CLAUDE.md 已更新至 plugin v[新版本]（自訂區塊已保留）
+✓ CLAUDE.md 已更新至 plugin v[新版本]（plugin_version 已寫入，自訂區塊已保留）
 ✓ 補齊資料夾：[列出新建的，若無則顯示「無需補齊」]
 ✓ 補齊模板：[列出新建的或更新的，若無則顯示「無需補齊」]
 ✓ index.md：[已建立空白範本 / 已存在略過]
