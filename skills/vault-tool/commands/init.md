@@ -84,18 +84,27 @@ ${CLAUDE_PLUGIN_ROOT}/scripts/check-deps.sh
 
 讀取 `${CLAUDE_PLUGIN_ROOT}/references/structure/folder-structure.md` 了解完整規格。
 
-嘗試在 Vault 根目錄建立以下資料夾（使用 `mkdir -p`）：
+嘗試在 Vault 根目錄建立以下資料夾（使用 `mkdir -p`，v0.9.0-beta 起含新增資料夾）：
 
 ```
 raw/
 raw/archived/
+raw/personal/                  # v0.9.0-beta 新增：個人寫作
 歷史紀錄/對話/
+歷史紀錄/個人寫作/              # v0.9.0-beta 新增：對應 raw/personal/
 主題知識/實體/
 主題知識/概念/
 主題知識/比較/
 主題知識/總覽/
 templates/
+outputs/                       # v0.9.0-beta 新增：產出層
+outputs/queries/               # v0.9.0-beta 新增：query 答案
+outputs/reflect/               # v0.9.0-beta 新增：reflect 報告
+outputs/lint/                  # v0.9.0-beta 新增：curator 報告
+index/                         # v0.9.0-beta 新增：極簡索引層
 ```
+
+詳細目錄結構說明見 `${CLAUDE_PLUGIN_ROOT}/references/structure/folder-structure.md` 與 `${CLAUDE_PLUGIN_ROOT}/references/structure/outputs-layer.md`。
 
 - 若建立**成功**：繼續下一步
 - 若建立**失敗**（例如唯讀檔案系統），切換為引導模式：
@@ -160,28 +169,48 @@ templates/
 obsidian create vault=[vault_name] path="templates/raw.md" content="---\ntitle:\ndate: \"{{date}}\"\nauthor:\nsource:\ncontent_type:\n---\n\n<!-- 在此貼入原始內容 -->"
 ```
 
-**`來源記錄.md`**：
+**`來源記錄.md`**（v0.9.0-beta：含 SHA-256 完整性 4 欄位）：
 ```bash
-obsidian create vault=[vault_name] path="templates/來源記錄.md" content="---\ntitle:\ndate: \"{{date}}\"\nsource:\ncategory: 來源紀錄\ncontent_type:\nauthor:\n---"
+obsidian create vault=[vault_name] path="templates/來源記錄.md" content="---\ntitle:\ndate: \"{{date}}\"\nsource:\ncategory: 來源紀錄\ncontent_type:\nauthor:\nraw_file:\nraw_sha256:\nlast_verified: \"{{date}}\"\npossibly_outdated: false\n---"
 ```
 
-**`知識筆記.md`**：
+**`知識筆記.md`**（v0.9.0-beta：含 confidence 5 欄位 + Contradictions/Evolution Log 強制段落）：
 ```bash
-obsidian create vault=[vault_name] path="templates/知識筆記.md" content="---\ntitle:\ndate: \"{{date}}\"\nupdated: \"{{date}}\"\ntags:\n  -\naliases: []\nsources:\n  -\ncategory:\nwiki_category:\ncontent_type:\nauthor:\n---"
+obsidian create vault=[vault_name] path="templates/知識筆記.md" content="---\ntitle:\ndate: \"{{date}}\"\nupdated: \"{{date}}\"\ntags:\n  -\naliases: []\nsources:\n  -\ncategory:\nwiki_category:\ncontent_type:\nauthor:\nconfidence: low\nsource_count: 0\ndomain_volatility: medium\nlast_reviewed: \"{{date}}\"\nhigh_candidate: false\n---\n\n## Contradictions\n\n_暫無已知矛盾。_\n\n## Evolution Log\n"
 ```
 
-### 步驟 4B-2：建立 index.md 與 log.md
+### 步驟 4B-2：建立 index.md / log.md / QUESTIONS.md / overview.md / index/* 系統檔
 
-在 Vault 根目錄建立以下 2 個檔案（不存在則建立，已存在則略過）：
+在 Vault 根目錄建立以下檔案（不存在則建立，已存在則略過）。v0.9.0-beta 起新增 4 個系統檔（QUESTIONS.md、overview.md、index/topic-index.md、index/question-index.md）。
 
 **`index.md`**（Wiki 目錄索引空白範本）：
 ```bash
 obsidian create vault=[vault_name] path="index.md" content="# Wiki Index\n"
 ```
 
-**`log.md`**（時間軸日誌空白範本）：
+**`log.md`**（時間軸日誌空白範本，v0.9.0-beta 條目格式更新）：
 ```bash
-obsidian create vault=[vault_name] path="log.md" content="# Wiki Log\n\n<!-- append-only：只追加，不修改既有條目 -->\n<!-- 格式：## [YYYY-MM-DD HH:mm] [ingest|query|curator] | [標題] -->\n"
+obsidian create vault=[vault_name] path="log.md" content="# Wiki Log\n\n<!-- append-only：只追加，不修改既有條目 -->\n<!-- v0.9.0-beta 格式：## [YYYY-MM-DD HH:mm] [ingest|query|curator|reflect|ask] [agent]? | [標題] -->\n<!-- 條目欄位: mode, interaction_mode, touched_specs, fail_reason, manual_fix -->\n"
+```
+
+**`QUESTIONS.md`**（v0.9.0-beta 新增，依 `references/workflow/ask-flow.md`）：
+```bash
+obsidian create vault=[vault_name] path="QUESTIONS.md" content="---\ntype: system-questions\ngraph-excluded: true\ncreated: \"{{date}}\"\nlast_updated: \"{{date}}\"\n---\n\n# Open Questions\n\n## Open\n\n_暫無開放問題。_\n\n## Answered\n\n_暫無已回答問題。_\n"
+```
+
+**`overview.md`**（v0.9.0-beta 新增，含待 review 清單骨架，依 `references/governance/agent-mode.md` Section 5）：
+```bash
+obsidian create vault=[vault_name] path="overview.md" content="---\ntype: system-overview\ngraph-excluded: true\ncreated: \"{{date}}\"\nlast_updated: \"{{date}}\"\n---\n\n# Knowledge Base Overview\n\n## Health Dashboard\n\n_本區由 reflect / curator skill 自動更新。_\n\n## 待 Review 清單（agent mode 累積）\n\n### high_candidate confidence（待人類確認升級為 high）\n\n_暫無待 review 項目。_\n\n### 同名異物（待人類裁決合併策略）\n\n_暫無待 review 項目。_\n\n### curator 建議修補（待人類執行）\n\n_暫無待 review 項目。_\n\n### 矛盾待裁決（agent 已標註，待人類降級決策）\n\n_暫無待 review 項目。_\n"
+```
+
+**`index/topic-index.md`**（v0.9.0-beta 新增，極簡索引層）：
+```bash
+obsidian create vault=[vault_name] path="index/topic-index.md" content="---\ntype: system-index\ngraph-excluded: true\ncreated: \"{{date}}\"\nlast_updated: \"{{date}}\"\n---\n\n# Topic Index\n\n<!-- 由 archive Step 2.8 自動更新 -->\n<!-- 格式: topic → [[歷史紀錄 paths]] + [[主題知識 paths]] -->\n"
+```
+
+**`index/question-index.md`**（v0.9.0-beta 新增）：
+```bash
+obsidian create vault=[vault_name] path="index/question-index.md" content="---\ntype: system-index\ngraph-excluded: true\ncreated: \"{{date}}\"\nlast_updated: \"{{date}}\"\n---\n\n# Question Index\n\n<!-- 由 archive Step 2.3 自動更新 -->\n<!-- 格式: Q-NNN → [[candidate sources]] -->\n"
 ```
 
 ### 步驟 4B-3：生成 CLAUDE.md
@@ -292,18 +321,24 @@ vault_path_windows: [vault_path_windows]
 列出所有已建立的項目：
 
 ```
-✓ 資料夾結構建立完成（raw/、歷史紀錄/對話/、主題知識/實體|概念|比較|總覽/、templates/）
-✓ 模板檔案建立完成（templates/ 下 3 個模板：raw、來源記錄、知識筆記）
-✓ index.md 與 log.md 空白範本已建立
-✓ CLAUDE.md 已生成（plugin v[version]）
+✓ 資料夾結構建立完成（raw/{archived,personal}/、歷史紀錄/{對話,個人寫作}/、主題知識/{實體|概念|比較|總覽}/、templates/、outputs/{queries,reflect,lint}/、index/）
+✓ 模板檔案建立完成（templates/ 下 3 個模板：raw、來源記錄、知識筆記，含 v0.9 SHA-256/confidence 欄位）
+✓ index.md / log.md / QUESTIONS.md / overview.md 系統檔已建立
+✓ index/{topic-index,question-index}.md 極簡索引已建立
+✓ CLAUDE.md 已生成（plugin v[version]，含 interaction_mode: human 預設）
 ✓ .obsidian 設定已對齊（或：.obsidian 尚未建立，Obsidian 首次開啟後可重新執行；或：因路徑限制無法自動修改，已提供手動引導）
 ✓ 全域 CLAUDE.md 已記錄此 Vault
 
-Vault 已就緒。可用的 skills：
-- archive：將 raw/ 中的待歸檔檔案寫入歷史紀錄並更新主題知識 Wiki
+Vault 已就緒（v0.9.0-beta）。可用的 skills：
+- archive：將 raw/ 中的待歸檔檔案寫入歷史紀錄並更新主題知識 Wiki（含 SHA-256 / confidence gate / 自動 QUESTIONS 匹配）
 - record-only：只寫來源記錄至歷史紀錄，不進行知識萃取
 - knowledge-only：從指定歷史紀錄重新推知識主題，跳過 record-writer
-- query：對 Wiki 提問，讀取相關頁面產出回答，可選擇寫回主題知識/總覽/
-- curator：Wiki 策展人，健康檢查 + 主題結構升級偵測與執行
+- query：對 Wiki 提問，讀取相關頁面產出回答，可選擇寫回 outputs/queries/
+- curator：Wiki 策展人，健康檢查（含 confidence/staleness/contradictions）+ 主題結構升級偵測與執行
 - tag-review：審查、補充、修正知識筆記的 tags，確保分類一致性
+- reflect（v0.9.0-rc 啟用）：二階認知活動 — 反向檢驗、模式掃描、Gap Analysis、深度合成
+- ask（v0.9.0-rc 啟用）：管理 QUESTIONS.md 開放問題隊列
+
+若要切換為 agent mode，編輯 vault/CLAUDE.md 將 `interaction_mode` 改為 `agent`。
+詳見 `references/governance/agent-mode.md`。
 ```

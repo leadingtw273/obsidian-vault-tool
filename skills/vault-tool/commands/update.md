@@ -52,17 +52,24 @@
 
 讀取 `${CLAUDE_PLUGIN_ROOT}/references/structure/folder-structure.md` 確認完整規格。
 
-確保以下資料夾存在（缺少的建立，**多餘的不刪**）：
+確保以下資料夾存在（缺少的建立，**多餘的不刪**），v0.9.0-beta 起含新增資料夾：
 
 ```
 raw/
 raw/archived/
+raw/personal/                  # v0.9.0-beta 新增
 歷史紀錄/對話/
+歷史紀錄/個人寫作/              # v0.9.0-beta 新增
 主題知識/實體/
 主題知識/概念/
 主題知識/比較/
 主題知識/總覽/
 templates/
+outputs/                       # v0.9.0-beta 新增
+outputs/queries/               # v0.9.0-beta 新增
+outputs/reflect/               # v0.9.0-beta 新增
+outputs/lint/                  # v0.9.0-beta 新增
+index/                         # v0.9.0-beta 新增
 ```
 
 若偵測到 `主題知識/` 下有符合 `YYYY-MM-DD/` 格式的舊目錄，僅輸出提示訊息：
@@ -80,10 +87,10 @@ templates/
 | 檔名 | 行為 |
 |------|------|
 | `raw.md` | 不存在則建立 |
-| `來源記錄.md` | 不存在則建立 |
-| `知識筆記.md` | 不存在則建立；若已存在但 frontmatter 缺少 `updated`、`aliases`、`sources`、`wiki_category` 欄位（舊版 schema），則更新為新版模板內容 |
+| `來源記錄.md` | 不存在則建立；v0.9.0-beta 起若已存在但缺少 `raw_file`/`raw_sha256`/`last_verified`/`possibly_outdated` → 更新為新版模板 |
+| `知識筆記.md` | 不存在則建立；v0.9.0-beta 起若已存在但缺少 `confidence`/`source_count`/`domain_volatility`/`last_reviewed`/`high_candidate` → 更新為新版模板 |
 
-新版 **`知識筆記.md`** frontmatter 格式（需與 `references/structure/templates-spec.md` 一致）：
+新版 **`知識筆記.md`** frontmatter 格式（v0.9.0-beta，15 欄位 + 2 強制段落）：
 ```yaml
 ---
 title:
@@ -98,6 +105,33 @@ category:
 wiki_category:
 content_type:
 author:
+confidence: low
+source_count: 0
+domain_volatility: medium
+last_reviewed: "{{date}}"
+high_candidate: false
+---
+
+## Contradictions
+
+_暫無已知矛盾。_
+
+## Evolution Log
+```
+
+新版 **`來源記錄.md`** frontmatter 格式（v0.9.0-beta，10 欄位）：
+```yaml
+---
+title:
+date: "{{date}}"
+source:
+category: 來源紀錄
+content_type:
+author:
+raw_file:
+raw_sha256:
+last_verified: "{{date}}"
+possibly_outdated: false
 ---
 ```
 
@@ -105,16 +139,44 @@ author:
 
 ---
 
-## 步驟 5b：補齊 index.md 與 log.md
+## 步驟 5b：補齊系統檔（v0.9.0-beta 升級）
 
-- **`index.md`**：若 Vault 根目錄不存在，建立空白 Wiki 目錄索引；已存在則略過
-- **`log.md`**：若 Vault 根目錄不存在，建立空白時間軸日誌；已存在則略過
+依 `references/structure/outputs-layer.md` 與 `references/governance/agent-mode.md`，補齊以下系統檔（不存在則建立，已存在則略過）：
 
-使用 obsidian CLI 寫入（分別執行，`create` 不加 `overwrite`，已存在時 CLI 會略過或報錯，確認後略過即可）：
+### 既有系統檔（v0.8 已有）
+
+- **`index.md`**：建立空白 Wiki 目錄索引
+- **`log.md`**：建立空白時間軸日誌
+
 ```
 obsidian create vault=[vault_name] path="index.md" content="# Wiki Index\n"
-obsidian create vault=[vault_name] path="log.md" content="# Wiki Log\n\n<!-- append-only：只追加，不修改既有條目 -->\n<!-- 格式：## [YYYY-MM-DD HH:mm] [ingest|query|curator] | [標題] -->\n"
+obsidian create vault=[vault_name] path="log.md" content="# Wiki Log\n\n<!-- append-only：只追加，不修改既有條目 -->\n<!-- v0.9.0-beta 格式：## [YYYY-MM-DD HH:mm] [ingest|query|curator|reflect|ask] [agent]? | [標題] -->\n<!-- 條目欄位: mode, interaction_mode, touched_specs, fail_reason, manual_fix -->\n"
 ```
+
+### v0.9.0-beta 新增系統檔
+
+- **`QUESTIONS.md`**：開放問題隊列（依 `references/workflow/ask-flow.md`）
+- **`overview.md`**：Health Dashboard + 待 review 清單（依 `references/governance/agent-mode.md` Section 5）
+- **`index/topic-index.md`**：極簡索引層（topic → wikilinks）
+- **`index/question-index.md`**：極簡索引層（question → candidate sources）
+
+```
+obsidian create vault=[vault_name] path="QUESTIONS.md" content="---\ntype: system-questions\ngraph-excluded: true\ncreated: \"{{date}}\"\nlast_updated: \"{{date}}\"\n---\n\n# Open Questions\n\n## Open\n\n_暫無開放問題。_\n\n## Answered\n\n_暫無已回答問題。_\n"
+
+obsidian create vault=[vault_name] path="overview.md" content="---\ntype: system-overview\ngraph-excluded: true\ncreated: \"{{date}}\"\nlast_updated: \"{{date}}\"\n---\n\n# Knowledge Base Overview\n\n## Health Dashboard\n\n_本區由 reflect / curator skill 自動更新。_\n\n## 待 Review 清單（agent mode 累積）\n\n### high_candidate confidence（待人類確認升級為 high）\n\n_暫無待 review 項目。_\n\n### 同名異物（待人類裁決合併策略）\n\n_暫無待 review 項目。_\n\n### curator 建議修補（待人類執行）\n\n_暫無待 review 項目。_\n\n### 矛盾待裁決（agent 已標註，待人類降級決策）\n\n_暫無待 review 項目。_\n"
+
+obsidian create vault=[vault_name] path="index/topic-index.md" content="---\ntype: system-index\ngraph-excluded: true\n---\n\n# Topic Index\n"
+
+obsidian create vault=[vault_name] path="index/question-index.md" content="---\ntype: system-index\ngraph-excluded: true\n---\n\n# Question Index\n"
+```
+
+### v0.9.0-beta CLAUDE.md 必補欄位
+
+若現有 vault 的 `CLAUDE.md` 缺 `interaction_mode` 欄位（v0.8 vault 升級時必發生），自動補入：
+- 預設值: `interaction_mode: human`
+- 加入位置: 「初始化狀態」段落的 yaml 區塊內
+
+由 Step 3 的 CLAUDE.md 重新生成統一處理（從新版 template 自動帶入）。
 
 ---
 
@@ -146,11 +208,14 @@ obsidian create vault=[vault_name] path="log.md" content="# Wiki Log\n\n<!-- app
 ## 完成摘要
 
 ```
-✓ CLAUDE.md 已更新至 plugin v[新版本]（plugin_version 已寫入，自訂區塊已保留）
-✓ 補齊資料夾：[列出新建的，若無則顯示「無需補齊」]
-✓ 補齊模板：[列出新建的或更新的，若無則顯示「無需補齊」]
-✓ index.md：[已建立空白範本 / 已存在略過]
-✓ log.md：[已建立空白範本 / 已存在略過]
+✓ CLAUDE.md 已更新至 plugin v[新版本]（plugin_version 已寫入，自訂區塊已保留，interaction_mode 預設 human）
+✓ 補齊資料夾：[列出新建的，含 v0.9.0-beta 新增 raw/personal/、歷史紀錄/個人寫作/、outputs/{queries,reflect,lint}/、index/]
+✓ 補齊模板：[列出新建的或更新的，含 v0.9.0-beta 知識筆記 5 個新欄位 + 來源記錄 4 個 SHA 欄位]
+✓ index.md / log.md：[已建立空白範本 / 已存在略過]
+✓ QUESTIONS.md / overview.md / index/topic-index.md / index/question-index.md（v0.9.0-beta 新增）：[已建立 / 已存在略過]
 ✓ .obsidian 設定已增量更新（或：.obsidian 不存在，略過）
 ✓ 全域 CLAUDE.md 已同步
+
+> 升級至 v0.9.0-beta 後，建議檢視 vault/CLAUDE.md 的 interaction_mode 欄位。
+> 若用於 AI agent 長期知識庫場景，可改為 `agent`。詳見 references/governance/agent-mode.md。
 ```
