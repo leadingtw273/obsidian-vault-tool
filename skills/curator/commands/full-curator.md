@@ -1,6 +1,23 @@
 # Full Curator：Wiki 健康檢查與結構演進
 
-掃描 `主題知識/` 下所有筆記，執行 8 項檢查（6 項健康檢查 + 2 項結構偵測），輸出修補建議報告，並追加 `log.md`。
+掃描 `主題知識/` 下所有筆記，執行 8 項既有檢查 + **v0.9.0-beta 新增 4 項檢查**（confidence violations / staleness / contradictions / wikilink format），輸出修補建議報告至 `outputs/lint/<date>.md`，並追加 `log.md`。
+
+> v0.9.0-beta 升級：
+> - 報告寫入 `outputs/lint/<date>.md`（依 `references/structure/outputs-layer.md`）
+> - 新增 4 項 v0.9 檢查（依 `references/quality/{sha-integrity,staleness,contradictions}.md` 與 `references/taxonomy/aliases-and-wikilink.md`）
+> - frontmatter 解析含 v0.9 新欄位（confidence / domain_volatility / last_reviewed / high_candidate）
+> - interaction_mode 分流（agent mode 不執行 Step 6 自動修補）
+
+---
+
+## Step 0：讀取 interaction_mode（v0.9.0-beta 新增）
+
+依 `${CLAUDE_PLUGIN_ROOT}/references/governance/agent-mode.md` 規範，從 vault CLAUDE.md 讀取 `interaction_mode` 欄位。若欄位缺失 → 預設 `human`。
+
+agent mode 下：
+- Step 6（自動修補）**不執行**（agent 不可自動修補）
+- Step 4 報告寫入 outputs/lint/，**不寫入 overview.md 待 review 清單**
+  （staleness 不是 high 優先級，依 `references/quality/staleness.md`）
 
 ---
 
@@ -13,7 +30,7 @@ Glob 工具：[vault_path]/主題知識/**/*.md
 ```
 
 對每個找到的檔案：
-1. 使用 Read 工具讀取前 25 行（取得 frontmatter）
+1. 使用 Read 工具讀取前 30 行（取得 frontmatter，v0.9 擴充後）
 2. 解析 frontmatter，提取以下欄位：
    - `title`（主題標題，若缺失則以檔名作為替代）
    - `date`（首次建立日期）
@@ -22,6 +39,12 @@ Glob 工具：[vault_path]/主題知識/**/*.md
    - `aliases`（別名陣列，可能不存在）
    - `sources`（來源陣列）
    - `wiki_category`（實體 / 概念 / 比較 / 總覽）
+   - **v0.9.0-beta 新增**：
+     - `confidence`（low / medium / high，缺失視為 low）
+     - `source_count`（整數，缺失視為 sources 陣列長度）
+     - `domain_volatility`（high / medium / low，缺失視為 medium）
+     - `last_reviewed`（YYYY-MM-DD，缺失視為 updated 或 date）
+     - `high_candidate`（true / false，缺失視為 false）
 3. 記錄該檔案相對於 `vault_path` 的路徑（格式：`主題知識/[類別]/[檔名].md`）
 
 將所有頁面資訊彙整為 `pages[]` 資料結構，於主對話內部記憶儲存。
@@ -45,14 +68,20 @@ Wiki 為空，主題知識/ 下尚無任何頁面，無需檢查。
 初始化以下儲存結構（主對話內部記憶）：
 - `orphans[]`：孤兒頁面路徑清單
 - `missing_xref[]`：缺失交叉引用，格式 `(page_path, mentioned_topic, suggested_wikilink)`
-- `stale[]`：可能過期的頁面，格式 `(page_path, days_since_updated)`
-- `conflicts[]`：含未解決矛盾的頁面路徑清單
+- `stale[]`：可能過期的頁面，格式 `(page_path, days_since_updated)`（**v0.9 升級為 staleness 檢查 2k**）
+- `conflicts[]`：含未解決矛盾的頁面路徑清單（**v0.9 升級為 contradictions 檢查 2j**）
 - `missing_concepts[]`：建議新建概念頁，格式 `(source_page, suggested_new_topic)`
 - `index_missing[]`：index 遺漏的頁面路徑
 - `index_stale[]`：index 過期（檔案已刪除）的條目
 - `index_mismatch[]`：index 分類不一致的條目，格式 `(index_entry, actual_directory, index_category)`
 - `upgrade_candidates[]`：符合升級條件的頁面，格式 `(page_path, section_name, trigger_reason)`
 - `hierarchy_candidates[]`：父子關係候選，格式 `(parent_path, child_path, relationship_type, reason)`
+- **v0.9.0-beta 新增**：
+  - `confidence_violations[]`：違反 confidence 規則的頁面，格式 `(page_path, violation_type, detail)`
+  - `staleness_warnings[]`：依 v0.9 staleness 閾值偵測過期，格式 `(page_path, volatility, days_since_reviewed, threshold)`
+  - `contradictions_pending[]`：含 ⚠ 條目（未標 [已解決]）的頁面，格式 `(page_path, contradiction_count)`
+  - `wikilink_violations[]`：違反 wikilink 格式鐵律，格式 `(page_path, line, raw_wikilink, suggested_slug)`
+  - `high_candidates_pending[]`：含 high_candidate: true 的頁面，格式 `(page_path, source_count, since_date)`
 
 ---
 
@@ -293,6 +322,110 @@ Grep 工具：
 
 ---
 
+### 2i. Confidence 違規檢查（v0.9.0-beta 新增）
+
+> 依 `${CLAUDE_PLUGIN_ROOT}/references/governance/confidence-gating.md`。
+
+**檢查項目**：
+
+1. **`high` 但未經人類確認**：concept 頁 `confidence: high` 但 Evolution Log 中沒有任何「human 確認升級為 high」的條目 → 違規（可能是 v0.8 vault 升級時誤帶值）
+2. **`high` 但 Contradictions 段落含 ⚠ 條目**：違規（升級應被矛盾阻斷）
+3. **source_count 與 sources 陣列長度不符**：除非 `personal_writing` 來源造成的差異，否則違規
+4. **`confidence` 值非合法**：不在 `low / medium / high` 之內 → 違規
+
+**執行流程**：
+
+對 `pages[]` 中每個頁面：
+- 讀取 frontmatter 的 `confidence`、`source_count`、`high_candidate`
+- 讀取 body 的 `## Contradictions` 段落
+- 讀取 body 的 `## Evolution Log` 段落
+- 依上述 4 條規則檢查
+- 違規時加入 `confidence_violations[]`，格式 `(page_path, violation_type, detail)`
+
+**對應到 Step 4 報告段落**：`### ⚠ Confidence Violations`
+
+---
+
+### 2j. Contradictions 待裁決檢查（v0.9.0-beta 新增）
+
+> 依 `${CLAUDE_PLUGIN_ROOT}/references/quality/contradictions.md`。
+
+**檢查項目**：
+
+對 `pages[]` 中每個頁面，找 `## Contradictions` 段落內所有 `⚠` 條目（不包括 `[已解決] ⚠` 條目）：
+
+- 計算未解決矛盾數量
+- 大於 0 → 加入 `contradictions_pending[]`，格式 `(page_path, count)`
+
+**v0.9 注意事項**：
+- 此檢查取代舊的「2c 矛盾偵測」中的部分功能（舊的 `> [!warning] 矛盾註記` callout 也應該被偵測，但 v0.9 wiki-writer 已停用該格式）
+- 偵測 `<!-- ⚠ Contradiction appended by wiki-writer -->` 註解：這是 wiki-writer 在 archive 時 append 的條目，curator 應該幫忙搬到 `## Contradictions` 段落內（v0.9 接受的折衷）
+
+**對應到 Step 4 報告段落**：`### ⚠ Contradictions Pending`
+
+---
+
+### 2k. Staleness 檢查（v0.9.0-beta 新增）
+
+> 依 `${CLAUDE_PLUGIN_ROOT}/references/quality/staleness.md`。
+
+**檢查項目**：
+
+對 `pages[]` 中每個頁面，依 `domain_volatility` 對應的閾值計算是否過期：
+
+| domain_volatility | 閾值 |
+|------------------|------|
+| `high` | > 90 天 |
+| `medium` | > 180 天 |
+| `low` | > 365 天 |
+
+計算 `今日 - last_reviewed > 閾值`：
+- 是 → 加入 `staleness_warnings[]`，格式 `(page_path, volatility, days_since_reviewed, threshold)`
+
+**取代既有 2c 「過期條目」檢查**：v0.8 的 2c 是固定 180 天閾值，v0.9 升級為依 volatility 動態閾值。`stale[]` 不再使用，由 `staleness_warnings[]` 取代。
+
+**對應到 Step 4 報告段落**：`### ⚠ Stale Concepts`
+
+---
+
+### 2l. Wikilink 格式違規檢查（v0.9.0-beta 新增）
+
+> 依 `${CLAUDE_PLUGIN_ROOT}/references/taxonomy/aliases-and-wikilink.md` 的 Wikilink 格式鐵律。
+
+**檢查項目**：
+
+對 `pages[]` 中每個頁面（讀取完整內容），用 regex 偵測 `[[...]]` 模式：
+
+- 違規 1：含中文字元（`[[價值投資]]`）
+- 違規 2：含大寫字母（`[[ValueInvesting]]`、`[[Value Investing]]`）
+- 違規 3：含底線（`[[value_investing]]`）
+- 違規 4：含空格（`[[value investing]]`）
+- 違規 5：駝峰式（`[[valueInvesting]]`）
+
+**例外**：
+- 來源頁的 wikilink（`[[歷史紀錄/...]]`）允許含日期格式（`歷史紀錄/文章/2026-04-15/01_RAG架構簡介`），不視為違規
+- 目錄路徑可包含中文（`[[主題知識/概念/...]]`），但 leaf 檔名必須是英文 slug
+
+**執行流程**：
+
+對每個違規 wikilink：
+- 計算建議的 slug 形式（lowercase + 連字符化）
+- 加入 `wikilink_violations[]`，格式 `(page_path, line, raw_wikilink, suggested_slug)`
+
+**對應到 Step 4 報告段落**：`### ⚠ Wikilink Format Violations`
+
+---
+
+### 2m. high_candidate 待 review 收集（v0.9.0-beta 新增）
+
+對 `pages[]` 中每個頁面，若 `high_candidate: true` → 加入 `high_candidates_pending[]`，格式 `(page_path, source_count, high_candidate_since)`。
+
+這個清單會在 Step 4 報告中提示使用者「有 N 個 high_candidate 待你確認」，並指引去 overview.md 處理。
+
+**對應到 Step 4 報告段落**：`### high_candidate Confidence (待人類確認升級為 high)`
+
+---
+
 ## Step 3：tag-review 整合（選擇性）
 
 > **前置說明**：tag-review 是獨立 skill，非 agent，無法透過 `subagent_type` 參數直接委派 Agent tool 呼叫。因此本 Step 採用「提示使用者」的方式整合，而非自動執行。
@@ -472,6 +605,56 @@ Grep 工具：
 
 ---
 
+## Step 4.5：寫入 outputs/lint/<date>.md（v0.9.0-beta 新增）
+
+> 依 `${CLAUDE_PLUGIN_ROOT}/references/structure/outputs-layer.md`，curator 報告必須持久化至 outputs/ 層。
+
+### 4.5.1 檢查 outputs/lint/ 目錄
+
+若 `[vault_path]/outputs/lint/` 不存在（v0.8 vault 未升級）→ 嘗試 `mkdir -p`。失敗則跳過本 step（不阻塞主流程）。
+
+### 4.5.2 寫入報告
+
+**檔名規則**：`outputs/lint/[YYYY-MM-DD].md`（每天最多一個檔案）
+
+若同日已有檔案 → append 新段落（用 `## Run [N] - HH:mm` 標題分隔）；若無 → create 新檔。
+
+**frontmatter 範本**（依 `references/structure/outputs-layer.md`）：
+
+```yaml
+---
+type: output
+output_kind: lint
+date: [YYYY-MM-DD]
+graph-excluded: true
+generator: curator
+interaction_mode: [human|agent]
+checks_run: 12
+violations_found: [N]
+---
+```
+
+**內容**：複製 Step 4 的完整報告（含所有 8 項既有檢查結果）+ v0.9 新增的 4 項檢查段落：
+- `### ⚠ Confidence Violations`（從 confidence_violations[]）
+- `### ⚠ Contradictions Pending`（從 contradictions_pending[]）
+- `### ⚠ Stale Concepts`（從 staleness_warnings[]，依 v0.9 動態 volatility 閾值）
+- `### ⚠ Wikilink Format Violations`（從 wikilink_violations[]）
+- `### high_candidate Confidence (待人類確認升級為 high)`（從 high_candidates_pending[]）
+
+**寫入命令**：
+
+```bash
+obsidian create vault=[vault_name] path="outputs/lint/[YYYY-MM-DD].md" content="---\ntype: output\noutput_kind: lint\ndate: [YYYY-MM-DD]\ngraph-excluded: true\ngenerator: curator\ninteraction_mode: [human|agent]\nchecks_run: 12\nviolations_found: [N]\n---\n\n[Step 4 完整報告內容 + v0.9 新區段]"
+```
+
+若內容超過 16KB → 分段 append。
+
+### 4.5.3 暫存路徑
+
+將寫入路徑存為 `[lint_output_path]`，供 Step 5 log.md 條目引用。
+
+---
+
 ## Step 5：追加 log.md
 
 讀取 `${CLAUDE_PLUGIN_ROOT}/references/structure/log-spec.md` 了解格式（若尚未讀取）。
@@ -484,13 +667,17 @@ date '+%Y-%m-%d %H:%M'
 
 **省略規則**（與 log-spec.md 一致）：若某項目無問題（數量為 0），省略該行。
 
-**Append 方法**：使用 obsidian CLI append 直接追加至 log.md：
+**Append 方法**：使用 obsidian CLI append 直接追加至 log.md。
+
+**v0.9.0-beta 條目格式**（含結構化欄位 + outputs 連結）：
 
 ```
-obsidian append vault=[vault_name] path="log.md" content="\n## [YYYY-MM-DD HH:mm] curator | manual\n- 掃描頁面：N\n- 孤兒頁面：[[主題知識/實體/XXX]], [[主題知識/概念/YYY]]\n- 矛盾：[[主題知識/概念/AAA]] 2 處\n- 缺失交叉引用：N 處\n- index 問題：N 個（遺漏 M + 過期 K + 錯誤 L）\n- 升級候選：N 個\n- 父子關係候選：N 組\n- 整體健康度：[評級]"
+obsidian append vault=[vault_name] path="log.md" content="\n## [YYYY-MM-DD HH:mm] curator [agent]? | manual\nmode: curator\ninteraction_mode: [human|agent]\ntouched_specs: [confidence-gating, contradictions, staleness, aliases-and-wikilink]\nfail_reason: none\nmanual_fix: [no|yes]\n- 掃描頁面：N\n- 孤兒頁面：[[主題知識/實體/XXX]], [[主題知識/概念/YYY]]\n- 矛盾待裁決：[[主題知識/概念/AAA]] 2 處\n- staleness 警告：N 個\n- confidence 違規：N 個\n- wikilink 違規：N 個\n- high_candidate 待確認：N 個\n- 缺失交叉引用：N 處\n- index 問題：N 個（遺漏 M + 過期 K + 錯誤 L）\n- 升級候選：N 個\n- 父子關係候選：N 組\n- 整體健康度：[評級]\n- outputs: [[outputs/lint/[YYYY-MM-DD]]]"
 ```
 
 > 注意：實際執行時將佔位符替換為真實數值；若某項目為 0 則省略該行，直接拼接其他行。`\"` 跳脫雙引號，若 content= 超過 16KB 則分多次 append。
+>
+> v0.9.0-beta 條目依 `interaction_mode` 決定標題後綴（agent mode 加 `[agent]`），並含 `mode/touched_specs/fail_reason/manual_fix` 結構化欄位 + `outputs:` 引用 lint 報告檔案。
 
 若 `log.md` 不存在，先建立再追加：
 ```
