@@ -14,6 +14,7 @@ vault_path: {{vault_path}}
 {{vault_path_windows_line}}
 plugin_version: {{plugin_version}}
 obsidian_cli: obsidian
+interaction_mode: human   # human | agent — 見「Interaction Mode」段落（v0.9.0-alpha 新增）
 ```
 
 ---
@@ -122,6 +123,27 @@ obsidian_cli: obsidian
 - **維護者**：主對話
 - **格式前綴**：`## [YYYY-MM-DD HH:mm] [type] | [標題]`，type 為 `ingest` / `query` / `curator`
 - **詳細格式**：見 `references/structure/log-spec.md`
+
+---
+
+## Interaction Mode（v0.9.0-alpha 新增）
+
+本 Vault 的 `interaction_mode` 欄位決定 plugin 與使用者的互動方式：
+
+| 值 | 適用情境 | 行為 |
+|----|---------|------|
+| `human` | 人類操作者使用（預設）| 需要決策時暫停請求確認（如 confidence high 升級）|
+| `agent` | AI agent 作為長期知識庫使用者 | **不阻塞**，需要人類確認的決策延後寫入 `overview.md` 待 review 清單 |
+
+**切換規則**：
+- 修改本檔案的 `interaction_mode` 欄位即可切換
+- 切換**只能由人類執行**，agent 不可自我升級或降級
+- 切換後自動在 `log.md` 記錄事件
+- 切換**不會清除** `overview.md` 的待 review 清單（保留審計軌跡）
+
+詳細機制與各 step 的 fallback 行為見 `references/governance/agent-mode.md`。
+
+> v0.9.0-beta 將為知識筆記新增以下欄位：`confidence`（low/medium/high）、`source_count`、`domain_volatility`、`last_reviewed`、`high_candidate`。詳見 `references/governance/confidence-gating.md`。
 
 ---
 
