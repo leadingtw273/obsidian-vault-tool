@@ -7,7 +7,13 @@
 
 ---
 
-## Step 0：解析目標歷史紀錄檔案
+## Step 0：解析目標歷史紀錄檔案 + 讀取 interaction_mode
+
+### 0.1 讀取 interaction_mode（v0.9.0-beta 新增）
+
+依 `${CLAUDE_PLUGIN_ROOT}/references/governance/agent-mode.md` 規範，從 vault CLAUDE.md 讀取 `interaction_mode` 欄位。若欄位缺失 → 使用預設 `human`。
+
+### 0.2 解析目標歷史紀錄路徑
 
 從使用者輸入解析目標歷史紀錄路徑。若使用者未明確指定，提示：
 
@@ -80,6 +86,8 @@ Agent tool，`subagent_type: "obsidian-vault-tool:wiki-writer"`。
 **Vault 路徑**：[vault_path]
 **Vault 名稱**：[vault_name]
 **今日日期**：[YYYY-MM-DD]
+**interaction_mode**：[human|agent]（由 Step 0.1 讀取）
+**personal_writing**：[true|false]（從歷史紀錄路徑判斷：若含「個人寫作/」→ true）
 **本批次其他主題**：[列出本批次所有其他主題標題，每行一個；若僅一個主題則省略此欄位]
 ```
 
@@ -142,10 +150,12 @@ obsidian append vault=[vault_name] path="index.md" content="\n[YYYY-MM-DD] [[主
 
 讀取 `${CLAUDE_PLUGIN_ROOT}/references/structure/log-spec.md` 了解格式。
 
-使用 `obsidian append` 直接追加 knowledge-only 類型的 ingest 條目：
+使用 `obsidian append` 直接追加 knowledge-only 類型的 ingest 條目。
+
+**v0.9.0-beta**：依 `interaction_mode` 決定條目標題格式（同 full-archive Step 5）。
 
 ```bash
-obsidian append vault=[vault_name] path="log.md" content="\n## [YYYY-MM-DD HH:mm] ingest | [來源標題] (knowledge-only)\n- new: [[主題知識/[類別]/主題A]], [[主題知識/[類別]/主題B]]\n- updated: [[主題知識/[類別]/主題C]]"
+obsidian append vault=[vault_name] path="log.md" content="\n## [YYYY-MM-DD HH:mm] ingest [agent] | [來源標題] (knowledge-only)\nmode: knowledge-only\ninteraction_mode: [human|agent]\ntouched_specs: [confidence-gating, contradictions, aliases-and-wikilink]\nfail_reason: none\nmanual_fix: no\n- new: [[主題知識/[類別]/主題A]], [[主題知識/[類別]/主題B]]\n- updated: [[主題知識/[類別]/主題C]]\n- high_candidate_promoted: [[主題知識/[類別]/主題D]]\n- contradiction_added: [[主題知識/[類別]/主題E]]"
 ```
 
 **時間戳記**：執行 `date '+%Y-%m-%d %H:%M'` 取得當前本地時間。
@@ -153,9 +163,16 @@ obsidian append vault=[vault_name] path="log.md" content="\n## [YYYY-MM-DD HH:mm
 條目格式說明：
 ```markdown
 
-## [YYYY-MM-DD HH:mm] ingest | [來源標題] (knowledge-only)
+## [YYYY-MM-DD HH:mm] ingest [agent] | [來源標題] (knowledge-only)
+mode: knowledge-only
+interaction_mode: agent
+touched_specs: [confidence-gating, contradictions, aliases-and-wikilink]
+fail_reason: none
+manual_fix: no
 - new: [[主題知識/[類別]/主題A]], [[主題知識/[類別]/主題B]]
 - updated: [[主題知識/[類別]/主題C]]
+- high_candidate_promoted: [[主題知識/[類別]/主題D]]
+- contradiction_added: [[主題知識/[類別]/主題E]]
 ```
 
 > 本模式無 `record:` 行（因為沿用既有歷史紀錄，非本次新建）。若無新建主題則省略 `- new:` 行；若無更新主題則省略 `- updated:` 行。

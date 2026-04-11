@@ -144,12 +144,25 @@ obsidian append vault=[vault_name] path="raw/conversation-[TIMESTAMP].md" conten
 
 ---
 
-## Step 0：掃描 raw/ 目錄
+## Step 0：掃描 raw/ 目錄 + 讀取 interaction_mode
 
 **前置預檢**：執行 `obsidian --version` 確認 obsidian CLI 可用。若命令失敗，輸出以下提示後終止：
 ```
 ⛔ obsidian CLI 不可用，請先安裝：npm install -g obsidian-cli
 ```
+
+### 0.1 讀取 interaction_mode（v0.9.0-beta 新增）
+
+依 `${CLAUDE_PLUGIN_ROOT}/references/governance/agent-mode.md` 規範，從 vault CLAUDE.md 讀取 `interaction_mode` 欄位：
+
+1. 用 Read 工具讀取 `[vault_path]/CLAUDE.md` 的 frontmatter
+2. 解析 `interaction_mode` 欄位
+3. 若欄位缺失（v0.8 vault 未升級）→ 使用預設值 `human`，並在 log.md 記一條 warning
+4. 將 mode 儲存為 `interaction_mode` 變數，後續所有 step 都會使用
+
+**Mode 影響的 step**：Step 1 / Step 2 / Step 2.3 / Step 2.5 / Step 4.5 / Step 5（log 條目格式）
+
+### 0.2 掃描 raw/ 檔案清單
 
 使用 Glob 工具掃描：`[vault_path]/raw/*.md`
 
@@ -207,6 +220,28 @@ raw/ 目錄有 N 個待歸檔檔案：
 
 ---
 
+## Step 0.7：raw/personal/ 分流判定（v0.9.0-beta 新增）
+
+> 依 `${CLAUDE_PLUGIN_ROOT}/references/governance/confidence-gating.md` 規範，
+> 來自 `raw/personal/` 的個人寫作不可給自己背書，本主題的 `source_count` 不增加。
+
+對 Step 0 確定的每個 raw 檔，判斷是否為 personal_writing：
+
+1. **路徑判定**：raw 檔絕對路徑是否包含 `/raw/personal/` → 是 → `personal_writing = true`
+2. **frontmatter 判定**：raw 檔的 frontmatter 是否含 `type: personal-writing` → 是 → `personal_writing = true`
+3. 兩個條件任一成立即視為 personal_writing
+4. 預設為 `false`
+
+將判定結果存為 `personal_writing_map` 對照表（raw 檔名 → bool），供 Step 1（record-writer 寫入歷史紀錄路徑）與 Step 2（wiki-writer 的 source_count 計算）使用。
+
+**對歷史紀錄寫入路徑的影響**（v0.9.0-beta）：
+- `personal_writing == true` 時，歷史紀錄寫入 `歷史紀錄/個人寫作/[YYYY-MM-DD]/[序號]_[概述].md`
+- `personal_writing == false` 時，照原本 content_type 對照表決定路徑
+
+> v0.9.0-beta 階段如無 `歷史紀錄/個人寫作/` 目錄，由 record-writer 自動建立。
+
+---
+
 ## Step 1：對每個 raw 檔並行呼叫 record-writer
 
 Agent tool，`subagent_type: "obsidian-vault-tool:record-writer"`。
@@ -220,12 +255,16 @@ Agent tool，`subagent_type: "obsidian-vault-tool:record-writer"`。
 **Vault 名稱**：[vault_name]
 **今日日期**：[YYYY-MM-DD]
 **指定序號**：[N]（由 Step 0.5 預分配）
+**interaction_mode**：[human|agent]（由 Step 0.1 讀取）
+**personal_writing**：[true|false]（由 Step 0.7 判定）
 ```
 
 **等待每個 agent 輸出並解析**：
 ```
 raw_file_path：[絕對路徑]
 raw_archived_path：[raw/archived/[檔名].md]
+raw_sha256：[64 字元小寫 hex]（v0.9.0-beta 新增）
+possibly_outdated：[true|false]（v0.9.0-beta 新增）
 來源記錄路徑：[完整路徑]
 來源記錄檔名：[序號_概述]
 知識主題樹：
@@ -234,12 +273,13 @@ raw_archived_path：[raw/archived/[檔名].md]
 來源類型：[content_type]
 
 ## 執行紀錄
-（結構化執行紀錄）
+（結構化執行紀錄含 touched_specs）
 ```
 
 從輸出提取以下欄位，依 raw 檔分組暫存：
 - `raw_file_path`（供 Step 6 移動至 raw/archived/ 用）
 - `raw_archived_path`（供 Step 2 傳給 wiki-writer 讀取原文用）
+- `raw_sha256` / `possibly_outdated`（v0.9.0-beta，供 Step 5 log.md 使用）
 - `來源記錄路徑`、`來源記錄檔名`
 - `知識主題樹`
 - `來源類型`（`content_type`）
@@ -399,6 +439,8 @@ Agent tool，`subagent_type: "obsidian-vault-tool:wiki-writer"`。
 **Vault 路徑**：[vault_path]
 **Vault 名稱**：[vault_name]
 **今日日期**：[YYYY-MM-DD]
+**interaction_mode**：[human|agent]（由 Step 0.1 讀取，影響 wiki-writer Step 5B Sub-step 8 的 confidence gate 行為）
+**personal_writing**：[true|false]（由 Step 0.7 判定，影響 wiki-writer 的 source_count 計算）
 **本批次其他主題**：[列出本批次所有其他獨立主題標題，每行一個]
 ```
 
@@ -410,6 +452,7 @@ Agent tool，`subagent_type: "obsidian-vault-tool:wiki-writer"`。
 - 寫入模式（`新建` / `merge` / `衝突待裁決`）
 - `wiki_category`（實體/概念/比較/總覽）
 - 同主題判定結果（Level X 命中，或 aliases +N）
+- **v0.9.0-beta 新增**：`source_count`、`confidence`、`confidence 變化`、`high_gate_pending`、`high_candidate_promoted`、`contradiction_added`、`touched_specs`
 - 執行紀錄（存為 `knowledge_writer_logs[]`）
 
 **衝突待裁決處理**：若某主題回報「衝突待裁決」，**不阻塞其他主題的處理**。所有 agents 完成後，對有衝突的主題依序顯示候選清單給使用者：
@@ -423,6 +466,106 @@ Agent tool，`subagent_type: "obsidian-vault-tool:wiki-writer"`。
 ```
 **使用者裁決**：合併至 [[主題知識/[類別]/[候選]]]（或「新建」）
 ```
+
+---
+
+## Step 2.3：QUESTIONS.md 自動匹配檢查（v0.9.0-beta 新增）
+
+> 依 `${CLAUDE_PLUGIN_ROOT}/references/workflow/ask-flow.md` 的 archive 自動匹配規範，
+> 對每個 Step 1 成功處理的 raw 檔，比對開放問題隊列。
+
+### 2.3.1 讀取 QUESTIONS.md
+
+用 Read 工具讀取 `[vault_path]/QUESTIONS.md`。若檔案不存在（v0.8 vault 未升級）→ **跳過本 step**，不阻塞流程。
+
+解析 `## Open` 段落，提取所有 `- [ ] Q-NNN: ...` 條目，存為 `open_questions[]`。
+
+### 2.3.2 LLM 匹配判斷
+
+對每個成功的 raw 檔（從 Step 1 取得來源記錄）與每個 open question，用 LLM 判斷該 source 是否能回答該 question：
+
+- `candidate to close`：本來源能完整回答此問題
+- `candidate to enrich`：本來源能補充背景或部分回答
+- `unrelated`：無關，跳過
+
+### 2.3.3 寫入 source 頁的 ## Possibly Answers 段落
+
+對每個有匹配的 raw 檔，在對應的 source 頁正文末尾追加 `## Possibly Answers` 段落：
+
+```bash
+obsidian append vault=[vault_name] path="歷史紀錄/[類型目錄]/[YYYY-MM-DD]/[序號]_[概述].md" content="\n\n## Possibly Answers\n\n- [[QUESTIONS#Q-005]] (candidate to close): [本來源如何回答此問題]\n- [[QUESTIONS#Q-008]] (candidate to enrich): [補充說明]"
+```
+
+### 2.3.4 Mode 分流
+
+| 行為 | Human Mode | Agent Mode |
+|------|-----------|-----------|
+| 寫入 ## Possibly Answers 段落 | ✅ | ✅ |
+| 提示使用者立即執行 query 並關閉問題 | ✅ 顯示提示 | ❌ 不顯示，僅寫入 |
+| 自動關閉 question | ❌ 永不自動關閉 | ❌ agent 不可關閉 |
+
+human mode 提示格式：
+
+```
+此來源可能回答了開放問題：
+  Q-008: 在你的開發場景下，是否應該採用 LangChain？
+是否現在 query 並嘗試關閉問題？
+[是] [否，繼續 archive] [稍後]
+```
+
+使用者選擇「是」→ 暫停 Step 3，進入 query skill。query 完成後返回 Step 3 繼續。
+
+### 2.3.5 暫存匹配結果
+
+將匹配結果存為 `question_matches[]`，供 Step 5 log.md 條目記錄使用。
+
+---
+
+## Step 2.5：Confidence Gate 處理（v0.9.0-beta 新增）
+
+> 處理 wiki-writer 在 human mode 下回報的 `high_gate_pending` 主題（merge 流程
+> 觸發 medium → high 升級條件，但 agent 不能單方面升級，等待主對話 prompt 使用者）。
+
+### 2.5.1 收集 pending 主題
+
+從 `knowledge_writer_logs[]` 中篩選 `high_gate_pending == true` 的主題。
+
+### 2.5.2 Mode 分流
+
+**human mode**：
+
+對每個 pending 主題，逐一顯示給使用者：
+
+```
+┌─────────────────────────────────────────────┐
+│ 概念「[主題標題]」現在有 [N]+ sources 且無  │
+│ 重大矛盾。是否確認 confidence: high？       │
+│                                             │
+│ Definition:                                 │
+│   [當前 concept 頁的 Definition 段落]       │
+│                                             │
+│ Sources ([N] 個):                           │
+│   - [[來源記錄1]]                           │
+│   - [[來源記錄2]]                           │
+│   ...                                       │
+│                                             │
+│ [確認升級] [跳過] [維持 medium]             │
+└─────────────────────────────────────────────┘
+```
+
+使用者選擇：
+
+- **「確認升級」** → 主對話用 eval 寫入 `confidence: high`，並在 Evolution Log 追加：「[date]（N sources）：human 確認升級為 high」
+- **「跳過」** → 不動，下次 ingest 時可再次觸發
+- **「維持 medium」** → 在 frontmatter 加 `keep_medium: true`，未來不再觸發 gate（直到人類手動移除此 flag）
+
+**agent mode**：
+
+agent mode 下不應該有 `high_gate_pending`（wiki-writer Sub-step 8 已直接降級為 `high_candidate`）。若仍出現 → log warning 並跳過。
+
+### 2.5.3 暫存升級結果
+
+將升級結果存為 `confidence_promotions[]`，供 Step 4.5 overview 與 Step 5 log 使用。
 
 ---
 
@@ -475,6 +618,47 @@ obsidian append vault=[vault_name] path="index.md" content="\n[YYYY-MM-DD] [[主
 
 ---
 
+## Step 4.5：更新 overview.md Health Dashboard（v0.9.0-beta 新增）
+
+> 依 `${CLAUDE_PLUGIN_ROOT}/references/governance/agent-mode.md` 規範，
+> 將本次 archive 產生的「待人類 review 事項」累積到 `vault/overview.md`。
+
+### 4.5.1 檢查 overview.md 是否存在
+
+用 Read 工具讀取 `[vault_path]/overview.md`。若檔案不存在（v0.8 vault 未升級）→ **跳過本 step**，不阻塞流程。
+
+### 4.5.2 收集本次 archive 的待 review 事項
+
+從前面 step 的暫存資料中收集：
+
+| 來源 | 對應 overview 段落 |
+|------|------------------|
+| `knowledge_writer_logs[]` 中 `high_candidate_promoted == true` 的主題 | ### high_candidate confidence（待人類確認升級為 high）|
+| `knowledge_writer_logs[]` 中 `contradiction_added == true` 的主題 | ### 矛盾待裁決（agent 已標註，待人類降級決策）|
+| Step 1.6 的 `needs_parent_upgrade == true` 的主題 | ### curator 建議修補（待人類執行）|
+| Step 2 回報的「⚠️ 並行感知」警告 | ### 同名異物（待人類裁決合併策略）|
+
+### 4.5.3 寫入 overview.md
+
+對每個待 review 事項，用 `obsidian append` 追加一行到對應段落（注意：append 預設寫到檔案末尾，無法精確插入段落內，由後續 curator 整理）：
+
+```bash
+obsidian append vault=[vault_name] path="overview.md" content="\n\n<!-- archive [YYYY-MM-DD HH:mm]: [item type] -->\n- [ ] [[主題知識/概念/RAG]] — 5 sources，agent 標記日期 [YYYY-MM-DD]"
+```
+
+### 4.5.4 Mode 分流
+
+| Mode | 行為 |
+|------|------|
+| `human` | **跳過本 step**（human mode 下使用者已在 Step 2.5 處理 pending 項目）|
+| `agent` | 執行 4.5.1 - 4.5.3 |
+
+### 4.5.5 暫存事項數量
+
+存為 `overview_appended_count`，供 Step 7 完成通知顯示。
+
+---
+
 ## Step 5：追加 log.md（主對話執行）
 
 讀取 `${CLAUDE_PLUGIN_ROOT}/references/structure/log-spec.md` 了解格式。
@@ -489,19 +673,33 @@ obsidian append vault=[vault_name] path="index.md" content="\n[YYYY-MM-DD] [[主
 - wiki-writer 回傳「**新建**」的主題 → 歸入 `- new:` 行
 - wiki-writer 回傳「**merge**」的主題 → 歸入 `- updated:` 行
 
+**v0.9.0-beta 新增**：依 `interaction_mode` 決定條目標題格式：
+- `human` mode → 標題 `## [YYYY-MM-DD HH:mm] ingest | [來源標題]`
+- `agent` mode → 標題 `## [YYYY-MM-DD HH:mm] ingest [agent] | [來源標題]`（依 agent-mode.md Section 6）
+
+**v0.9.0-beta 新增條目欄位**（從 record-writer 與 wiki-writer 的執行紀錄合併）：
+
 ```bash
-obsidian append vault=[vault_name] path="log.md" content="\n## [YYYY-MM-DD HH:mm] ingest | [來源標題]\n- record: [[歷史紀錄/[來源類型目錄]/[YYYY-MM-DD]/[序號]_[概述]]]\n- new: [[主題知識/[類別]/主題A]], [[主題知識/[類別]/主題B]]\n- updated: [[主題知識/[類別]/主題C]]"
+obsidian append vault=[vault_name] path="log.md" content="\n## [YYYY-MM-DD HH:mm] ingest [agent] | [來源標題]\nmode: full-archive\ninteraction_mode: [human|agent]\ntouched_specs: [confidence-gating, sha-integrity, agent-mode, contradictions, ...]\nfail_reason: none\nmanual_fix: no\n- record: [[歷史紀錄/[來源類型目錄]/[YYYY-MM-DD]/[序號]_[概述]]]\n- new: [[主題知識/[類別]/主題A]], [[主題知識/[類別]/主題B]]\n- updated: [[主題知識/[類別]/主題C]]\n- high_candidate_promoted: [[主題知識/[類別]/主題D]]\n- contradiction_added: [[主題知識/[類別]/主題E]]\n- question_matched: Q-005 (candidate to close)"
 ```
 
-若無新建主題則省略 `- new:` 行；若無更新主題則省略 `- updated:` 行。
+若無對應內容則省略該行。`touched_specs` 從所有 sub-agents 的執行紀錄合併去重。
 
 條目格式說明：
 ```markdown
 
-## [YYYY-MM-DD HH:mm] ingest | [來源標題]
+## [YYYY-MM-DD HH:mm] ingest [agent] | [來源標題]
+mode: full-archive
+interaction_mode: agent
+touched_specs: [confidence-gating, sha-integrity, agent-mode, contradictions, aliases-and-wikilink]
+fail_reason: none
+manual_fix: no
 - record: [[歷史紀錄/[來源類型目錄]/[YYYY-MM-DD]/[序號]_[概述]]]
 - new: [[主題知識/[類別]/主題A]], [[主題知識/[類別]/主題B]]
 - updated: [[主題知識/[類別]/主題C]]
+- high_candidate_promoted: [[主題知識/[類別]/主題D]]
+- contradiction_added: [[主題知識/[類別]/主題E]]
+- question_matched: Q-005 (candidate to close)
 ```
 
 > 注意：log.md 採 append-only 模式，不讀取整檔、不覆寫整檔。

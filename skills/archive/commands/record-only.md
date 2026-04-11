@@ -6,7 +6,13 @@
 
 ---
 
-## Step 0：解析 raw 檔路徑
+## Step 0：解析 raw 檔路徑 + 讀取 interaction_mode
+
+### 0.1 讀取 interaction_mode（v0.9.0-beta 新增）
+
+依 `${CLAUDE_PLUGIN_ROOT}/references/governance/agent-mode.md` 規範，從 vault CLAUDE.md 讀取 `interaction_mode` 欄位。若欄位缺失 → 使用預設 `human`。
+
+### 0.2 解析 raw 檔路徑
 
 從使用者輸入解析目標 raw 檔。若使用者未明確指定檔案路徑，使用 Glob 工具掃描 `[vault_path]/raw/*.md` 列出清單供選擇：
 
@@ -50,6 +56,7 @@ Agent tool，`subagent_type: "obsidian-vault-tool:record-writer"`。
 **Vault 名稱**：[vault_name]
 **今日日期**：[YYYY-MM-DD]
 **指定序號**：[N]（由 Step 0.5 預分配）
+**interaction_mode**：[human|agent]（由 Step 0.1 讀取）
 ```
 
 **等待輸出並解析**：
@@ -82,10 +89,14 @@ raw_file_path：[絕對路徑]
 
 讀取 `${CLAUDE_PLUGIN_ROOT}/references/structure/log-spec.md` 了解格式。
 
-對每個 Step 1 成功的 raw 檔，使用 `obsidian append` 直接追加 record-only 類型的 ingest 條目：
+對每個 Step 1 成功的 raw 檔，使用 `obsidian append` 直接追加 record-only 類型的 ingest 條目。
+
+**v0.9.0-beta**：依 `interaction_mode` 決定條目標題格式：
+- `human` mode → `## [YYYY-MM-DD HH:mm] ingest | [來源標題] (record-only)`
+- `agent` mode → `## [YYYY-MM-DD HH:mm] ingest [agent] | [來源標題] (record-only)`
 
 ```bash
-obsidian append vault=[vault_name] path="log.md" content="\n## [YYYY-MM-DD HH:mm] ingest | [來源標題] (record-only)\n- record: [[歷史紀錄/[來源類型目錄]/[YYYY-MM-DD]/[序號]_[概述]]]"
+obsidian append vault=[vault_name] path="log.md" content="\n## [YYYY-MM-DD HH:mm] ingest [agent] | [來源標題] (record-only)\nmode: record-only\ninteraction_mode: [human|agent]\ntouched_specs: [sha-integrity, path-safety-spec]\nfail_reason: none\nmanual_fix: no\n- record: [[歷史紀錄/[來源類型目錄]/[YYYY-MM-DD]/[序號]_[概述]]]"
 ```
 
 **時間戳記**：執行 `date '+%Y-%m-%d %H:%M'` 取得當前本地時間。
@@ -93,7 +104,12 @@ obsidian append vault=[vault_name] path="log.md" content="\n## [YYYY-MM-DD HH:mm
 條目格式說明：
 ```markdown
 
-## [YYYY-MM-DD HH:mm] ingest | [來源標題] (record-only)
+## [YYYY-MM-DD HH:mm] ingest [agent] | [來源標題] (record-only)
+mode: record-only
+interaction_mode: agent
+touched_specs: [sha-integrity, path-safety-spec]
+fail_reason: none
+manual_fix: no
 - record: [[歷史紀錄/[來源類型目錄]/[YYYY-MM-DD]/[序號]_[概述]]]
 ```
 
