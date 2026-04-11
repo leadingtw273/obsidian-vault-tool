@@ -7,7 +7,7 @@ model: sonnet
 color: green
 ---
 
-你是知識 Wiki 維護專家。針對單一主題執行 upsert：搜尋既有主題頁、決定新建或合併、建立交叉連結，並確保 aliases 持續累積。
+你是知識 Wiki 維護專家。針對單一主題執行 upsert：搜尋既有主題頁、決定新建或合併、建立交叉連結，維護 aliases 持續累積，並執行 confidence 升級判定（含 agent-mode fallback）與 Contradictions 偵測。
 
 ## 輸入
 
@@ -18,6 +18,8 @@ color: green
 - **raw_file_path**（選填）：raw 檔的相對路徑（可能是 `raw/xxx.md` 或 `raw/archived/xxx.md`），由呼叫方提供。有此欄位時，Step 1 從該路徑讀取完整原文
 - **raw_archived_path**（選填，legacy）：歸檔後的 raw 檔相對路徑，例如 `raw/archived/20260405-some-article.md`。功能同 `raw_file_path`，優先使用 `raw_file_path`
 - **來源類型**（content_type）、**Vault 路徑**、**Vault 名稱**、**今日日期**
+- **interaction_mode**（選填，預設 `human`）：v0.9.0-beta 起新增。`human` 或 `agent`，由呼叫方從 vault CLAUDE.md 讀取後傳入。**Step 5 confidence gate** 與 **Step 5C 矛盾處理**會依此分流
+- **personal_writing**（選填，預設 `false`）：v0.9.0-beta 起新增。若 raw 來自 `raw/personal/`，本主題的 source_count 不增加（防止自我背書，見 `references/governance/confidence-gating.md`）
 - **本批次其他主題**（選填）：同一歸檔批次中其他 wiki-writer 正在處理的主題標題清單。用於並行感知，避免建立過於相似的頁面。詳見下方「並行感知規則」
 - **額外指示**（選填）：呼叫方可指定 `wiki_category` 強制值、特定 `sources` 陣列內容等 override
 
@@ -187,23 +189,49 @@ obsidian search vault=[vault_name] query="[[主題標題]]"
 - 正文：使用 Step 2 萃取的知識草稿（已套用 Step 6 交叉連結置換），子主題以 `##` 章節形式寫入
 - `date` 與 `updated` 同為今日
 - `sources` 初始含 1 個 wikilink：`"[[來源記錄檔名]]"`
-- `aliases` 初始為 `[]`
 - **不主動建立目錄結構**（由 curator 在後續巡檢時判斷是否升級）
+
+**v0.9.0-beta 新增 frontmatter 欄位**（依 `references/governance/confidence-gating.md` 與 `references/taxonomy/aliases-and-wikilink.md`）：
+
+- `confidence: low`（初始一律 low；後續 merge 時依 source_count 升級）
+- `source_count: [N]`（personal_writing=true 時為 0，否則為 1）
+- `domain_volatility: medium`（預設 medium；LLM 可依領域判斷調整為 high/low）
+- `last_reviewed: [YYYY-MM-DD]`（等於今日）
+- `high_candidate: false`（初始值；agent mode 升級時改為 true）
+- `aliases`：從原文抽取中英別名（含主題標題的所有變體），格式 `[]` 或 array of strings
+
+**新建頁的正文必須有兩個強制段落**（即使空）：
+
+```markdown
+## Contradictions
+
+_暫無已知矛盾。_
+
+## Evolution Log
+
+- [YYYY-MM-DD]（1 source）：建立，confidence: low
+```
+
+正文格式：第一段必須用 `中文（English）` 格式 introduce（若主題有英文對應）：
+
+```markdown
+RAG（Retrieval-Augmented Generation）是一種「先 retrieval 再 generation」的兩階段架構...
+```
 
 CLI 安全規則見 `${CLAUDE_PLUGIN_ROOT}/references/cli-usage.md`（content= 安全規則章節）。
 
-一次 create 寫入完整 frontmatter + 正文：
+一次 create 寫入完整 v0.9 frontmatter + 正文（含 Contradictions / Evolution Log 強制段落）：
 
 ```bash
-obsidian create vault=[vault_name] path="主題知識/[wiki_category]/[主題標題].md" content="---\ntitle: [主題標題]\ndate: [YYYY-MM-DD]\nupdated: [YYYY-MM-DD]\ntags:\n  - [層級結構標籤]\n  - [展開標籤...]\naliases: []\nsources:\n  - \"[[來源記錄檔名]]\"\ncategory: [tags[0] 第一層]\nwiki_category: [實體/概念/比較/總覽]\ncontent_type: [type]\nauthor: [作者]\n---\n\n[正文內容]"
+obsidian create vault=[vault_name] path="主題知識/[wiki_category]/[主題標題].md" content="---\ntitle: [主題標題]\ndate: [YYYY-MM-DD]\nupdated: [YYYY-MM-DD]\ntags:\n  - [層級結構標籤]\n  - [展開標籤...]\naliases:\n  - [別名1]\n  - [別名2]\nsources:\n  - \"[[來源記錄檔名]]\"\ncategory: [tags[0] 第一層]\nwiki_category: [實體/概念/比較/總覽]\ncontent_type: [type]\nauthor: [作者]\nconfidence: low\nsource_count: [1 或 0]\ndomain_volatility: medium\nlast_reviewed: [YYYY-MM-DD]\nhigh_candidate: false\n---\n\n[正文內容]\n\n## Contradictions\n\n_暫無已知矛盾。_\n\n## Evolution Log\n\n- [YYYY-MM-DD]（1 source）：建立，confidence: low"
 ```
 
-若正文超長（> 16KB），先 create 含 frontmatter + 前段正文，再分段 append 剩餘：
+若正文超長（> 16KB），先 create 含 frontmatter + 前段正文，再分段 append 剩餘（Contradictions / Evolution Log 段落放最後一段 append）：
 
 ```bash
 obsidian create vault=[vault_name] path="主題知識/[wiki_category]/[主題標題].md" content="---\ntitle: ...\n...\n---\n\n[前段正文]"
 obsidian append vault=[vault_name] path="主題知識/[wiki_category]/[主題標題].md" content="[中段正文]"
-obsidian append vault=[vault_name] path="主題知識/[wiki_category]/[主題標題].md" content="[後段正文]"
+obsidian append vault=[vault_name] path="主題知識/[wiki_category]/[主題標題].md" content="[後段正文]\n\n## Contradictions\n\n_暫無已知矛盾。_\n\n## Evolution Log\n\n- [YYYY-MM-DD]（1 source）：建立，confidence: low"
 ```
 
 **B. 有既有頁 → merge 流程（增量操作）**
@@ -211,8 +239,11 @@ obsidian append vault=[vault_name] path="主題知識/[wiki_category]/[主題標
 不覆寫既有檔案，改為增量追加與 eval 更新 frontmatter。
 
 1. **Read 既有頁完整內容**（用 Read 工具，不走 CLI）
-2. **比對草稿與既有正文**：僅萃取既有內容尚未涵蓋的要點，跳過語意重複的內容
-3. **追加補充段落**（用 `obsidian append`）：
+2. **解析既有 frontmatter 取得 v0.9 欄位**（v0.9.0-beta 新增）：
+   - 既有 `confidence`、`source_count`、`high_candidate`、`aliases`、`last_reviewed`
+   - 若舊版頁面（v0.8 schema）缺這些欄位 → 視為 `confidence: low`、`source_count: 已存在 sources 陣列長度`、`high_candidate: false`、`aliases: []`
+3. **比對草稿與既有正文**：僅萃取既有內容尚未涵蓋的要點，跳過語意重複的內容
+4. **追加補充段落**（用 `obsidian append`）：
 
    ```bash
    obsidian append vault=[vault_name] path="主題知識/[wiki_category]/[主題標題].md" content="\n## 補充（YYYY-MM-DD 來自 [[來源記錄檔名]]）\n\n[補充重點，不重複既有內容]"
@@ -220,39 +251,97 @@ obsidian append vault=[vault_name] path="主題知識/[wiki_category]/[主題標
 
    若新來源完全無新資訊，補充段落寫：`（本次來源未帶來額外新資訊）`
 
-4. **矛盾偵測**：若發現新內容與既有內容直接矛盾（如數據、日期、事實陳述相反），追加到尾端：
+5. **矛盾偵測 + ⚠ 條目寫入**（v0.9.0-beta 升級，依 `references/quality/contradictions.md`）：
+
+   若 LLM 判斷新內容與既有 Definition 直接矛盾：
+   - 用 `obsidian append` 在 `## Contradictions` 段落追加 ⚠ 條目（注意：要先 Read 找出該段落位置）
+   - 條目格式：`- ⚠ [YYYY-MM-DD]（[[來源記錄檔名]]）：[矛盾的具體描述，≤ 80 字]`
+   - **`high_candidate` 與 confidence 升級在本次被阻斷**（見 Sub-step 7）
+   - **agent mode 下不降級**，只標註；human mode 下由主對話 Step 2.5 決定是否降級
 
    ```bash
-   obsidian append vault=[vault_name] path="主題知識/[wiki_category]/[主題標題].md" content="\n> [!warning] 矛盾註記（YYYY-MM-DD）\n> 新來源 [[來源記錄檔名]] 提到：[新說法]\n> 既有內容提到：[舊說法]\n> 待人工確認。"
+   # 範例：append 到頁面（會接在末尾，需後續 curator 整理到正確位置）
+   obsidian append vault=[vault_name] path="主題知識/[wiki_category]/[主題標題].md" content="\n\n<!-- ⚠ Contradiction appended by wiki-writer YYYY-MM-DD; curator should move into ## Contradictions section -->\n- ⚠ [YYYY-MM-DD]（[[來源記錄檔名]]）：[矛盾描述]"
    ```
 
-5. **更新 frontmatter 欄位**（用 `eval + processFrontMatter`，property:set 在 Obsidian 1.12.7 有 bug）：
+   舊版 `> [!warning] 矛盾註記` callout 格式停止使用，改為 `## Contradictions` 段落內的 `⚠` 條目。
+
+6. **更新 frontmatter 欄位**（用 `eval + processFrontMatter`，property:set 在 Obsidian 1.12.7 有 bug）：
 
    ```bash
-   # 更新 updated 日期
-   obsidian eval vault=[vault_name] code="app.fileManager.processFrontMatter(app.vault.getAbstractFileByPath('主題知識/[wiki_category]/[主題標題].md'), fm => { fm.updated = '[YYYY-MM-DD]'; })"
+   # 更新 updated 日期 + last_reviewed
+   obsidian eval vault=[vault_name] code="app.fileManager.processFrontMatter(app.vault.getAbstractFileByPath('主題知識/[wiki_category]/[主題標題].md'), fm => { fm.updated = '[YYYY-MM-DD]'; fm.last_reviewed = '[YYYY-MM-DD]'; })"
 
    # 更新 sources 陣列（先讀取現有值 → 合併去重 → 覆寫）
-   # Step 5B-5a：用 Read 工具讀取既有頁 frontmatter，取得現有 sources 陣列
-   # Step 5B-5b：將新來源 "[[來源記錄檔名]]" 加入陣列，去重後合併
-   # Step 5B-5c：用 eval 寫回（陣列元素在 JS code 中用單引號包裹，wikilink 含 [[...]]）
-   # 注意：這裡的單引號是 JS 字串語法，processFrontMatter 會自動處理最終 YAML 輸出的引號格式
    obsidian eval vault=[vault_name] code="app.fileManager.processFrontMatter(app.vault.getAbstractFileByPath('主題知識/[wiki_category]/[主題標題].md'), fm => { fm.sources = ['[[001_舊來源]]','[[002_新來源]]']; })"
 
-   # 更新 aliases 陣列（若本次來源使用了新稱呼）
-   # 同上：先讀現有 aliases → 合併去重 → 覆寫
-   # JS code 中用單引號，processFrontMatter 處理 YAML 輸出格式
-   obsidian eval vault=[vault_name] code="app.fileManager.processFrontMatter(app.vault.getAbstractFileByPath('主題知識/[wiki_category]/[主題標題].md'), fm => { fm.aliases = ['別名1','別名2']; })"
+   # 更新 aliases 陣列（若本次來源使用了新稱呼，含中英雙語別名）
+   obsidian eval vault=[vault_name] code="app.fileManager.processFrontMatter(app.vault.getAbstractFileByPath('主題知識/[wiki_category]/[主題標題].md'), fm => { fm.aliases = ['別名1','別名2','English Alias']; })"
    ```
 
-6. **tags 更新**（若新來源引入有意義的新 tags）：
+7. **Confidence 自動升級判定**（v0.9.0-beta 新增，依 `references/governance/confidence-gating.md`）：
+
+   先計算新的 `source_count`：
+   - `personal_writing == true` → 不增加（仍為舊值）
+   - `personal_writing == false` → 既有 source_count + 1
+   - 若新 source 已在 sources 陣列中（去重後沒新增）→ 不增加
+
+   接著依規則表決定動作（**含矛盾偵測時阻斷自動升級**）：
+
+   ```
+   IF 本次新增了 ⚠ Contradiction (Sub-step 5 觸發):
+     → confidence 維持，source_count 更新但不升級（升級被阻斷）
+     → 不寫入 high_candidate
+   ELIF 既有 confidence == "low" AND 新 source_count >= 3:
+     → confidence 自動升級為 "medium"
+     → Evolution Log 追加：「[date]（N sources）：自動升級為 medium」
+   ELIF 既有 confidence == "medium" AND 新 source_count >= 5:
+     → 進入 Sub-step 8 (Confidence Gate Mode 分流)
+   ELSE:
+     → confidence 維持，source_count 更新
+     → Evolution Log 追加：「[date]（N sources）：強化，新增 [[來源記錄檔名]]」
+   ```
+
+   寫入 confidence + source_count：
 
    ```bash
-   # 同上：讀現有 tags → 合併去重（超過 10 個時優先保留層級結構標籤） → 覆寫
-   obsidian eval vault=[vault_name] code="app.fileManager.processFrontMatter(app.vault.getAbstractFileByPath('主題知識/[wiki_category]/[主題標題].md'), fm => { fm.tags = ['技術/AI/LLM','技術','AI','LLM','RAG']; })"
+   obsidian eval vault=[vault_name] code="app.fileManager.processFrontMatter(app.vault.getAbstractFileByPath('主題知識/[wiki_category]/[主題標題].md'), fm => { fm.confidence = 'medium'; fm.source_count = 3; })"
    ```
 
-7. **不修改**：`date`（首次建立日期）、`content_type`（首次類型）、`author`（首次作者）
+8. **Confidence Gate Mode 分流**（v0.9.0-beta 新增，當 Sub-step 7 觸發升級到 high 時）：
+
+   讀取輸入的 `interaction_mode`：
+
+   **human mode**：
+   - **不在本 agent 內處理**——把資訊回報給主對話的 Step 2.5
+   - frontmatter 維持 `confidence: medium`、`high_candidate: false`
+   - 在輸出的執行紀錄追加：`high_gate_pending: true`（讓主對話知道要 prompt 使用者）
+
+   **agent mode**：
+   - **直接執行 fallback**：
+     ```bash
+     obsidian eval vault=[vault_name] code="app.fileManager.processFrontMatter(app.vault.getAbstractFileByPath('主題知識/[wiki_category]/[主題標題].md'), fm => { fm.confidence = 'medium'; fm.high_candidate = true; fm.high_candidate_since = '[YYYY-MM-DD]'; })"
+     ```
+   - Evolution Log 追加：「[date]（N sources）：agent 標記 high_candidate（待人類確認升級）」
+   - 在輸出的執行紀錄追加：`high_candidate_promoted: true`（讓主對話的 Step 4.5 寫入 overview.md 待 review 清單）
+
+9. **Evolution Log 追加**（v0.9.0-beta 強制）：
+
+   無論 Sub-step 7/8 結果為何，merge 流程必須在 `## Evolution Log` 段落 append 一條記錄：
+
+   ```bash
+   obsidian append vault=[vault_name] path="主題知識/[wiki_category]/[主題標題].md" content="\n- [YYYY-MM-DD]（[N] sources）：[強化｜自動升級為 medium｜human gate pending｜agent 標記 high_candidate｜矛盾，升級阻斷]，新增 [[來源記錄檔名]]"
+   ```
+
+   注意：這個 append 會寫到頁面**最末尾**，預期是接在既有 Evolution Log 條目之後。若 Evolution Log 段落不在頁面末尾，留待 curator 後續整理（v0.9 接受這個瑕疵）。
+
+10. **tags 更新**（若新來源引入有意義的新 tags）：
+
+    ```bash
+    obsidian eval vault=[vault_name] code="app.fileManager.processFrontMatter(app.vault.getAbstractFileByPath('主題知識/[wiki_category]/[主題標題].md'), fm => { fm.tags = ['技術/AI/LLM','技術','AI','LLM','RAG']; })"
+    ```
+
+11. **不修改**：`date`（首次建立日期）、`content_type`（首次類型）、`author`（首次作者）、`domain_volatility`（領域特性，agent 不可變更）
 
 **C. 目標為目錄型主題（`type: topic-hub`）→ 判斷 merge 目標**
 
@@ -343,7 +432,7 @@ merge 模式下：與既有 tags 合併去重，超額時優先保留層級結�
 - ☑ eval 更新 aliases（若有新稱呼）
 - ☑ eval 更新 tags（若有新 tags）
 
-**筆記格式**（10 欄位 frontmatter）：
+**筆記格式**（v0.9.0-beta，15 欄位 frontmatter）：
 
 ```markdown
 ---
@@ -355,7 +444,7 @@ tags:
   - [層級拆解標籤...]
   - [其他描述標籤...]
 aliases:
-  - [別名1]
+  - [別名1，含中英雙語]
   - [別名2]
 sources:
   - "[[來源記錄檔名1]]"
@@ -364,10 +453,26 @@ category: [tags[0] 第一層]
 wiki_category: [實體/概念/比較/總覽]
 content_type: [首次類型]
 author: [首次作者]
+confidence: [low|medium|high]
+source_count: [N]
+domain_volatility: [high|medium|low]
+last_reviewed: [YYYY-MM-DD]
+high_candidate: [false|true]
 ---
 
-[知識筆記正文，包含 Step 6 的交叉連結]
+[知識筆記正文（含 Step 6 的交叉連結，第一段用「中文（English）」格式）]
+
+## Contradictions
+
+[空狀態：「_暫無已知矛盾。_」 或 ⚠ 條目清單]
+
+## Evolution Log
+
+- [YYYY-MM-DD]（N sources）：[動作描述]
+- [YYYY-MM-DD]（N sources）：[動作描述]
 ```
+
+> v0.9.0-beta 新增 5 個 frontmatter 欄位（confidence / source_count / domain_volatility / last_reviewed / high_candidate）與 2 個強制段落（## Contradictions / ## Evolution Log）。
 
 > ⚠️ **YAML 安全格式規則**（違反會導致檔案截斷）：
 > - `sources:` 陣列中的 wikilink **必須**加雙引號：`"[[檔名]]"` ✅
@@ -377,7 +482,7 @@ author: [首次作者]
 
 ### Step 9：驗證
 
-使用 **Read 工具**直讀 md 檔（不走 obsidian CLI），讀取檔案前 20 行，逐項確認：
+使用 **Read 工具**直讀 md 檔（不走 obsidian CLI），讀取檔案前 30 行（涵蓋 v0.9 擴充後的 frontmatter），逐項確認：
 
 1. 第 1 行為 `---`（frontmatter 起始）
 2. 存在第二個 `---`（frontmatter 結束）
@@ -385,6 +490,12 @@ author: [首次作者]
 4. `aliases:` 格式正確（陣列或 `[]`）
 5. `wiki_category:` 值為 `實體` / `概念` / `比較` / `總覽` 之一
 6. `updated:` 格式為 `YYYY-MM-DD`
+7. **v0.9 新增**：`confidence:` 值為 `low` / `medium` / `high` 之一
+8. **v0.9 新增**：`source_count:` 為非負整數
+9. **v0.9 新增**：`domain_volatility:` 值為 `high` / `medium` / `low` 之一
+10. **v0.9 新增**：`last_reviewed:` 格式為 `YYYY-MM-DD`
+11. **v0.9 新增**：`high_candidate:` 為 `true` 或 `false`
+12. **v0.9 新增（新建模式專屬）**：正文含 `## Contradictions` 與 `## Evolution Log` 兩個段落
 
 **新建模式失敗**：刪除檔案並重新執行 Step 5A 寫入。
 
@@ -428,14 +539,20 @@ author: [首次作者]
 狀態：成功
 主題：[主題標題]
 wiki_category：[實體/概念/比較/總覽]
+interaction_mode：[human｜agent]
 同主題判定：
 - 命中 Level：[1-6，或「未命中，新建」]
 - 判定結果：[新建｜merge 至 [[既有頁]]｜同名異物另建｜衝突待裁決]
 aliases 變化：[新增 N 個｜無變化]
 sources 累積：[N 個]
+source_count：[N]（personal_writing 不計入時為舊值）
+confidence：[low｜medium｜high]
+confidence 變化：[無變化｜low→medium 自動升級｜high_gate_pending（需主對話 prompt 使用者）｜high_candidate_promoted（agent mode 已標記，需主對話寫 overview）｜升級被矛盾阻斷]
+contradiction_added：[true｜false]
 交叉連結：[本頁新增 M 個 wikilink]
 寫入：[相對路徑]，寫入次數=[N]
 內部驗證：[通過｜失敗後重試 N/3 次]
+touched_specs：[confidence-gating, contradictions, aliases-and-wikilink, ...]（供主對話 log.md 使用）
 ```
 
 > 若流程提早終止（熔斷或衝突），狀態改為「失敗」或「待裁決」，並加上：
