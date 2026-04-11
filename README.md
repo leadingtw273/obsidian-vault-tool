@@ -2,65 +2,75 @@
 
 Obsidian Vault 知識庫管理工具，作為 Claude Code Plugin 分發。
 
-以「資料 vs 資訊」為核心，將對話與外部資源萃取為結構化知識，沉澱至 Obsidian Vault。
+以 [Karpathy LLM Wiki](https://karpathy.ai/) 模式為骨架，整合 obsidian-vault-tool 自有的雙樹結構（**歷史紀錄**按時間 / **主題知識**按類別），支援人類使用者、AI agent（作為長期知識庫）、與朋友圈分享三種使用情境。
+
+## 核心理念
+
+LLM 不只「**檢索**」知識（傳統 RAG），而是「**累積與維護**」一個持久化 wiki：每個來源被讀取一次，從中萃取的概念被沉澱到 concept 頁，後續所有 query 都從這個編譯過的 wiki 出發。**知識編譯一次，持續維護**——而非每次查詢重新推導。
 
 ## 功能
 
-- **`/vault-tool`**：知識庫管理工具，支援四種操作：
-  - **init**：初始化 Vault 結構、模板、`.obsidian` 設定，並生成 CLAUDE.md
-  - **update**：更新 plugin 設定至最新版本（保留使用者自訂內容）
-  - **reset**：重置所有 plugin 管理的設定與模板（筆記不受影響）
-  - **delete**：移除管理設定或刪除整個 Vault
-- **`archive` skill**：完整歸檔主入口，同時產生來源記錄（歷史紀錄/）與知識筆記（主題知識/），支援對話、YouTube、Facebook、文章、PDF、網頁等所有來源。提供三種模式：
-  - **full-archive**（預設）：來源記錄 + 知識筆記
-  - **record-only**：只建立來源記錄，不萃取知識筆記
-  - **knowledge-only**：只萃取知識筆記，不建立來源記錄
-- **`tag-review` skill**：標籤品質控制，由使用者手動觸發
-- **`query` skill**：對 Wiki（主題知識/）提問，讀取相關主題頁綜合回答，可選擇回填為總覽筆記
-- **`curator` skill**：Wiki 策展人，健康檢查（孤兒頁面、缺失交叉引用、過期條目、index.md 一致性）+ 主題結構升級偵測與執行
+| Skill | 觸發詞 | 對應 Karpathy | 用途 |
+|-------|-------|--------------|------|
+| `vault-tool` | `/vault-tool {init\|update\|reset\|delete}` | — | 建立 / 升級 / 重置 / 刪除 vault |
+| `archive` | 「歸檔對話」「處理這個 raw」 | INGEST | raw → 歷史紀錄 + 主題知識（雙寫）|
+| `query` | 「查一下」「wiki 裡有沒有」 | QUERY | 從 vault 合成答案 + 寫入 outputs/queries/ |
+| `reflect` ⭐ | 「reflect」「找漏洞」（v0.9.0-rc 啟用）| REFLECT | 反向檢驗 + Gap Analysis（防回音室、找空白）|
+| `ask` ⭐ | 「我想搞清楚 X」（v0.9.0-rc 啟用）| ADD-QUESTION | 結構化開放問題隊列 |
+| `curator` | 「lint」「wiki 體檢」 | LINT | 健康檢查（孤兒、矛盾、staleness、wikilink 格式...）|
+| `tag-review` | 「檢查標籤」 | — | 標籤品質控制（v0.9.0-rc 後併入 curator）|
 
-## 知識庫架構
+⭐ 標記的 skill 在 v0.9.0-alpha 已完成 spec，實作預定 v0.9.0-rc。
+
+## 知識庫架構（v0.9）
 
 ```
 vault/
 ├── raw/                    # 待歸檔原始檔案
-│   └── archived/           # 已歸檔的 raw 原檔（mv 保留）
-├── 歷史紀錄/
-│   ├── 對話/               # 來源記錄（conversation），初始化時建立
-│   ├── YouTube/            # 來源記錄（youtube），動態建立
-│   ├── Facebook/           # 來源記錄（fb-post），動態建立
-│   ├── 文章/               # 來源記錄（article），動態建立
-│   ├── 文件/               # 來源記錄（pdf），動態建立
-│   └── 網頁/               # 來源記錄（webpage），動態建立
-│       └── YYYY-MM-DD/     # 子資料夾，檔名 [序號]_[概述].md
-├── 主題知識/                # 知識筆記（archive / knowledge-only 寫入）
-│   ├── 實體/               # wiki_category: 實體
-│   ├── 概念/               # wiki_category: 概念
-│   ├── 比較/               # wiki_category: 比較
-│   └── 總覽/               # wiki_category: 總覽
-├── index.md                # Wiki 主題頁 append-only 目錄清單
-├── log.md                  # 操作紀錄（append-only）
-└── templates/
-    ├── raw.md
-    ├── 來源記錄.md
-    └── 知識筆記.md
+│   ├── articles/           # 文章
+│   ├── clippings/          # Web Clipper 剪藏
+│   ├── personal/           # ⭐ 自己寫的文章（不計入 confidence source_count）
+│   └── archived/           # 已歸檔的 raw 原檔
+├── 歷史紀錄/                # 時間軸（每個 raw 對應一個 source 頁）
+│   ├── 文章/YYYY-MM-DD/
+│   ├── 對話/
+│   └── 個人寫作/YYYY-MM-DD/  # ⭐ 對應 raw/personal/
+├── 主題知識/                # 類別軸（多 source 融合的 concept 頁）
+│   ├── 概念/               # frontmatter: confidence / aliases / Evolution Log
+│   ├── 實體/
+│   ├── 比較/
+│   └── 總覽/               # synthesis-writer 寫這
+├── outputs/ ⭐               # 產出層
+│   ├── queries/            # query 答案
+│   ├── reflect/            # gap report / warnings
+│   └── lint/               # curator 報告
+├── QUESTIONS.md ⭐           # 開放問題隊列
+├── overview.md ⭐            # Health Dashboard + 待 review 清單
+├── index.md                # 主題目錄
+├── log.md                  # 操作時間軸
+└── CLAUDE.md               # 含 interaction_mode (human / agent)
 ```
 
-### 三種歸檔 skill
+⭐ = v0.9 新增元素
 
-| Skill | 觸發情境 | 產出 |
-|-------|---------|------|
-| **`archive`**（full） | 「歸檔這次對話」、「把這個存到知識庫」、貼上 URL | 來源記錄 + 知識筆記（雙向 wikilink） |
-| **`archive`**（record-only） | 「只記錄這個來源」、「只要來源記錄」 | 來源記錄（無知識筆記） |
-| **`archive`**（knowledge-only） | 「只要知識整理」、「不需來源記錄」 | 知識筆記（無來源記錄） |
+## v0.9 的新能力
 
-### archive 執行架構
+- **Confidence 三級制**：concept 頁有 `low / medium / high` 信心度，high 必須人類確認（防錯誤複利）
+- **Agent Mode**：vault 可設為 `interaction_mode: agent`，所有需要人類確認的決策延後寫入 `overview.md` 待 review 清單，agent 主流程不阻塞
+- **SHA-256 完整性錨點**：每個 source 頁記錄 raw 檔的 SHA-256，為未來的 re-ingest 偵測預留
+- **REFLECT 二階認知**：reflect skill 對既有結論主動找反證、偵測回音室風險、找出知識空白
+- **QUESTIONS 開放問題隊列**：把「我想搞清楚 X」結構化，archive 新來源時自動匹配
+- **outputs/ 持久化**：query / reflect / curator 的成果寫入 outputs/，不消失於對話歷史
+- **Aliases 跨語言**：concept 頁支援中英雙語別名，wikilink 統一英文小寫連字符
+- **Knowledge Supply Chain**：concept 頁的 Evolution Log 直接連結到歷史紀錄的時間點 wikilink，形成「概念 → 證據 → 時間點」的審計軌跡
 
-```
-archive skill
-├─ record-writer agent（內容獲取 + 分析 + 建立來源記錄）
-└─ wiki-writer agent × N（平行，從 raw/archived/ 讀取原文，撰寫知識筆記）
-```
+## Why this over Karpathy LLM Wiki?
+
+- **Plugin 一鍵安裝**：Karpathy 教程是「複製 prompt 自建」，本 plugin 是 Claude Code 原生 plugin
+- **雙樹結構**：歷史紀錄按時間軸 + 主題知識按類別軸，形成 graph view 上的時間 + 類別交叉視角
+- **wiki_category 4 分類**：把「比較」與「總覽」升級為頭等公民（Karpathy 只有 concepts/entities/synthesis）
+- **obsidian CLI 直接寫檔**：保證 frontmatter 格式正確（Karpathy 依賴 LLM 自己寫 YAML）
+- **Agent-friendly**：唯一明確支援 AI agent 作為長期知識庫使用者的 LLM Wiki 工具
 
 ## 前置需求
 
@@ -69,74 +79,58 @@ archive skill
 
 ## 安裝
 
-### 手動安裝
-
-**Step 1：Clone 專案**
-
 ```bash
-git clone https://github.com/leadingtw/obsidian-vault-tool ~/.claude/plugins/obsidian-vault-tool
-```
+# 1. Clone 專案
+git clone https://github.com/leadingtw273/obsidian-vault-tool ~/.claude/plugins/obsidian-vault-tool
 
-**Step 2：將 skills 連結至 Claude Code 載入目錄**
-
-```bash
+# 2. 連結 skills
 mkdir -p ~/.claude/skills
 ln -s ~/.claude/plugins/obsidian-vault-tool/skills/* ~/.claude/skills/
-```
 
-> **為什麼需要這步驟？**
-> Claude Code 只會自動載入 `~/.claude/skills/` 目錄下的 skills，單純 clone 到 `~/.claude/plugins/` 並不會觸發自動掃描。透過建立 symbolic link，skills 實體仍在 plugin 目錄中（方便日後 `git pull` 更新），但 Claude Code 可以從 `~/.claude/skills/` 正常讀取。
-
-**Step 3：安裝依賴**
-
-```
+# 3. 安裝依賴
 /plugin marketplace add kepano/obsidian-skills
 /plugin install obsidian@obsidian-skills
 ```
 
-### 更新
+> Skills 採 symlink 方式安裝，日後 `git pull` 即可更新，不需重建連結。
+
+## 使用流程
 
 ```bash
-cd ~/.claude/plugins/obsidian-vault-tool
-git pull
+# 在 Obsidian vault 目錄啟動 Claude Code
+cd ~/your-vault && claude
+
+# 1. 初始化 vault
+/vault-tool init
+
+# 2. 把 raw 檔丟進 vault/raw/articles/
+
+# 3. 歸檔（archive 自動偵測新檔案並提示）
+歸檔 raw/articles/your-article.md
+
+# 4. 查詢
+RAG 和 FineTune 哪個更適合？
+
+# 5. 體檢
+lint
 ```
 
-Skills 的 symlink 不需重建，更新會直接反映。
+## 文件結構
 
-## 使用方式
+- `references/governance/` — 安全與治理（path-safety / consistency / confidence / agent-mode）
+- `references/structure/` — 儲存結構（templates / index / log / outputs / folder）
+- `references/taxonomy/` — 分類規則（topic-matching / wiki-category / aliases）
+- `references/quality/` — 品質保證（sha-integrity / contradictions / staleness / decision-tables）
+- `references/workflow/` — 流程定義（archive / reflect / ask / query）
 
-在 Obsidian vault 目錄中啟動 Claude Code 後執行：
-
-```
-/vault-tool
-```
-
-系統會根據您的意圖自動選擇操作，或列出選單供您選擇：
-
-```
-/vault-tool init    # 建立全新知識庫
-/vault-tool update  # 更新現有知識庫設定
-/vault-tool reset   # 重置所有設定
-/vault-tool delete  # 刪除管理設定或整個 Vault
-```
-
-初始化完成後，skills 會在對應情境下自動觸發：
-
-- 說「歸檔這次對話」或貼上 URL 說「幫我整理這個」→ `archive`（完整歸檔）
-- 說「只要知識整理」→ `knowledge-only`
-- 說「只要來源記錄」→ `record-only`
-- 說「檢查標籤」「tag review」→ `tag-review`（標籤品質控制）
-- 說「查一下 X」「wiki 裡有沒有」「整理一下 X 主題」→ `query`（Wiki 問答）
-- 說「lint」「wiki 體檢」「檢查 wiki」「整理 wiki」「升級主題」→ `curator`（健康檢查 + 結構演進）
+執行 `bash scripts/lint-specs.sh` 跑跨檔一致性檢查。
 
 ## 版本
 
-`0.6.0` — Wiki 主題層級機制 + curator skill：引入動態層級（單頁→目錄結構，最深 3 層）、lint 重命名為 curator（策展人：巡檢 + 結構演進）、wiki-writer 簡化為只往上增加、record-writer 輸出樹狀結構
-
-`0.5.1` — 全盤審查修復：修正 full-archive 時序 bug（wiki-writer 讀取 raw 路徑）、放寬 vault-tool/lint allowed-tools 限制、delete hard 模式加引號與二次確認、統一 GitHub URL、修正 README 描述與 cli-usage 補齊 `files` 命令、清理死碼與過時引用
-
-`0.5.0` — 新增 query（Wiki 問答回填）與 lint（健康檢查）skill；刪除 social-scraper 與 wsl-powershell-bridge；重寫 wiki-writer agent 支援 6 層 fallback 主題匹配；新增 9 份 reference spec（cli-usage、index-spec、log-spec、topic-matching-spec、wiki-category-spec 等）
-
-`0.4.0` — 整合歸檔流程，統一為 archive skill 三模式架構（full / record-only / knowledge-only）
-
-`0.3.0` — 重構歸檔架構，引入 archive 主 skill + custom agent 兩階段設計（record-writer → wiki-writer × N），統一來源記錄（支援對話/YouTube/Facebook 等全類型），移除 session-archive
+- `0.9.0-alpha` — 融合 Karpathy LLM Wiki 模式：references 5 資料夾重組、agent-mode + confidence-gating + 6 份新 quality/workflow spec、interaction_mode 機制（spec 階段，實作預定 0.9.0-beta/rc）
+- `0.8.0` — 一致性與安全強化：path-safety 三階段防護、consistency-boundary 弱一致性模型、decision-tables、lint-specs.sh、迴歸測試
+- `0.7.0` — 全面審查修復（22 項 + 三方復盤 3 項）
+- `0.6.0` — Wiki 主題層級機制 + curator skill：引入動態層級（單頁→目錄結構，最深 3 層）、wiki-writer 簡化、record-writer 輸出樹狀結構
+- `0.5.x` — 新增 query 與 lint skill；wiki-writer 6 層 fallback 主題匹配；9 份 reference spec
+- `0.4.0` — 整合歸檔流程為 archive skill 三模式架構
+- `0.3.0` — 引入 archive 主 skill + custom agent 兩階段設計
