@@ -50,7 +50,7 @@
 
 ## 步驟 4：補齊資料夾
 
-讀取 `${CLAUDE_PLUGIN_ROOT}/references/folder-structure.md` 確認完整規格。
+讀取 `${CLAUDE_PLUGIN_ROOT}/references/structure/folder-structure.md` 確認完整規格。
 
 確保以下資料夾存在（缺少的建立，**多餘的不刪**）：
 
@@ -73,7 +73,7 @@ templates/
 
 ## 步驟 5：補齊模板
 
-讀取 `${CLAUDE_PLUGIN_ROOT}/references/templates-spec.md` 了解完整規格。
+讀取 `${CLAUDE_PLUGIN_ROOT}/references/structure/templates-spec.md` 了解完整規格。
 
 在 `templates/` 目錄補齊 3 個模板：
 
@@ -83,7 +83,7 @@ templates/
 | `來源記錄.md` | 不存在則建立 |
 | `知識筆記.md` | 不存在則建立；若已存在但 frontmatter 缺少 `updated`、`aliases`、`sources`、`wiki_category` 欄位（舊版 schema），則更新為新版模板內容 |
 
-新版 **`知識筆記.md`** frontmatter 格式（需與 `references/templates-spec.md` 一致）：
+新版 **`知識筆記.md`** frontmatter 格式（需與 `references/structure/templates-spec.md` 一致）：
 ```yaml
 ---
 title:

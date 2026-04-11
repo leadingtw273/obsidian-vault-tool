@@ -12,7 +12,7 @@ HTML 註解中的 `decision-id` 供 lint script 交叉驗證，不影響人類�
 
 <!-- decision-id: topic-match -->
 
-權威來源於此表，`agents/wiki-writer.md` Step 4 與 `references/topic-matching-spec.md` 應引用本表。
+權威來源於此表，`agents/wiki-writer.md` Step 4 與 `references/taxonomy/topic-matching-spec.md` 應引用本表。
 
 | Level | 名稱 | 觸發條件 | 執行動作 | 命中後下一步 |
 |-------|------|---------|---------|------------|
@@ -52,7 +52,7 @@ HTML 註解中的 `decision-id` 供 lint script 交叉驗證，不影響人類�
 
 <!-- decision-id: wiki-category -->
 
-權威來源於 `references/wiki-category-spec.md`，本表為摘要便於快速查找。
+權威來源於 `references/taxonomy/wiki-category-spec.md`，本表為摘要便於快速查找。
 
 | Step | 類別 | 判定問題 | 關鍵線索 | 命中後 |
 |------|------|---------|---------|--------|
@@ -92,7 +92,7 @@ HTML 註解中的 `decision-id` 供 lint script 交叉驗證，不影響人類�
 
 <!-- decision-id: same-name-different-thing -->
 
-權威來源於 `references/topic-matching-spec.md`「同名異物處理」段落。
+權威來源於 `references/taxonomy/topic-matching-spec.md`「同名異物處理」段落。
 
 | 情境 | `tags[0]` 第一層比對 | 判定 | 命名規則 |
 |------|-------------------|------|---------|
@@ -136,7 +136,7 @@ HTML 註解中的 `decision-id` 供 lint script 交叉驗證，不影響人類�
 
 ```bash
 # R6: 決策表權威性檢查
-AUTHORITY_IDS=$(grep -oP 'decision-id: \K[a-z-]+' references/decision-tables-spec.md)
+AUTHORITY_IDS=$(grep -oP 'decision-id: \K[a-z-]+' references/quality/decision-tables-spec.md)
 for id in $AUTHORITY_IDS; do
     # 確認引用方只有引用，無重複定義
     ...

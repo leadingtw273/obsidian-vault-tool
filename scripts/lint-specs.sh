@@ -118,10 +118,10 @@ echo "→ R5: 同名異物規則引用（topic-matching-spec 為權威）"
 
 # wiki-category-spec.md 的同名異物段落應為引用形式（非完整定義）
 # 權威段落應只出現在 topic-matching-spec.md 和 wiki-writer.md (Level 2/5 判定)
-if grep -q "完整判定流程.*topic-matching-spec" references/wiki-category-spec.md 2>/dev/null; then
+if grep -q "完整判定流程.*topic-matching-spec" references/taxonomy/wiki-category-spec.md 2>/dev/null; then
     log_ok "R5" "wiki-category-spec.md 正確引用 topic-matching-spec"
 else
-    log_error "R5" "references/wiki-category-spec.md" "同名異物段落未引用 topic-matching-spec 作為權威來源"
+    log_error "R5" "references/taxonomy/wiki-category-spec.md" "同名異物段落未引用 topic-matching-spec 作為權威來源"
 fi
 
 # ------------------------------------------------------------------

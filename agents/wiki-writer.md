@@ -66,7 +66,7 @@ color: green
 
 **若呼叫方額外指示強制了 `wiki_category`**（例如 query 模式強制為「總覽」），直接採用，跳過以下判定流程。
 
-否則讀取 `${CLAUDE_PLUGIN_ROOT}/references/wiki-category-spec.md`，依照其定義的 5 步判定流程決定 `wiki_category`：
+否則讀取 `${CLAUDE_PLUGIN_ROOT}/references/taxonomy/wiki-category-spec.md`，依照其定義的 5 步判定流程決定 `wiki_category`：
 
 - `實體`：具體可指稱的對象（人名、工具、產品、組織）
 - `比較`：明確對比兩個以上對象，對比本身為核心價值
@@ -77,8 +77,8 @@ color: green
 
 ### Step 4：搜尋既有主題頁（6 層 fallback）
 
-完整規格見 `${CLAUDE_PLUGIN_ROOT}/references/topic-matching-spec.md`。
-快速決策表見 `${CLAUDE_PLUGIN_ROOT}/references/decision-tables-spec.md` 決策表 A。依序執行：
+完整規格見 `${CLAUDE_PLUGIN_ROOT}/references/taxonomy/topic-matching-spec.md`。
+快速決策表見 `${CLAUDE_PLUGIN_ROOT}/references/quality/decision-tables-spec.md` 決策表 A。依序執行：
 
 **預載：取得既有主題頁清單**
 
@@ -138,7 +138,7 @@ obsidian search vault=[vault_name] query="[[主題標題]]"
 
 **Level 5：tag[0] + 模糊搜尋**
 
-1. 依原文語意推斷本主題的 `tags[0]`（參照 `references/tag-topic-spec.md` 第一層分類）
+1. 依原文語意推斷本主題的 `tags[0]`（參照 `references/taxonomy/tag-topic-spec.md` 第一層分類）
 2. 從 `wiki_pages` 取得候選清單，Read 候選頁前 20 行（含 frontmatter），篩選 `tags[0]` 第一層相同者
 3. LLM 判定語意是否接近（標題、摘要段落比對）
 4. 確信同主題 → 進行 upsert；多個候選或不確定 → 進入 Level 6
@@ -174,13 +174,13 @@ obsidian search vault=[vault_name] query="[[主題標題]]"
 
 **A. 無既有頁 → 新建流程（一律建單頁）**
 
-> 完整決策邏輯見 `${CLAUDE_PLUGIN_ROOT}/references/decision-tables-spec.md` 決策表 B（寫入路徑決定）。
+> 完整決策邏輯見 `${CLAUDE_PLUGIN_ROOT}/references/quality/decision-tables-spec.md` 決策表 B（寫入路徑決定）。
 
 - 路徑決定優先順序：
   1. Step 4 匹配到既有頁 → 使用既有頁路徑（最高優先）
   2. 呼叫方提供了 `**寫入路徑**` → 使用該路徑（由主對話的 Step 1.6 層級映射決定）
   3. 以上皆無 → 預設為 `主題知識/[wiki_category]/[主題標題].md`
-- **路徑安全驗證**（依 `${CLAUDE_PLUGIN_ROOT}/references/path-safety-spec.md`）：
+- **路徑安全驗證**（依 `${CLAUDE_PLUGIN_ROOT}/references/governance/path-safety-spec.md`）：
   - 最終路徑必須落在 `主題知識/` 下（白名單驗證）
   - 確認 `[主題標題]` 已通過 REJECT 檢查（無 `../`、絕對路徑等）
   - 若驗證失敗 → 依 path-safety-spec 格式熔斷中止，不寫入檔案
@@ -302,7 +302,7 @@ obsidian append vault=[vault_name] path="主題知識/[wiki_category]/[主題標
 
 ### Step 7：決定 tags
 
-讀取 `${CLAUDE_PLUGIN_ROOT}/references/tag-topic-spec.md` 取得合法分類層級。
+讀取 `${CLAUDE_PLUGIN_ROOT}/references/taxonomy/tag-topic-spec.md` 取得合法分類層級。
 
 **7-1. 查詢既有標籤（必要步驟）**
 

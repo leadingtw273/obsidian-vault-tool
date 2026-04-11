@@ -22,7 +22,7 @@ index.md
 log.md
 ```
 
-詳細格式規格請參見 `references/index-spec.md` 與 `references/log-spec.md`。
+詳細格式規格請參見 `references/structure/index-spec.md` 與 `references/structure/log-spec.md`。
 
 ## 動態資料夾（由 archive / record-writer 按需建立）
 

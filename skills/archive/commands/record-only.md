@@ -80,7 +80,7 @@ raw_file_path：[絕對路徑]
 
 ## Step 2：追加 log.md（主對話執行）
 
-讀取 `${CLAUDE_PLUGIN_ROOT}/references/log-spec.md` 了解格式。
+讀取 `${CLAUDE_PLUGIN_ROOT}/references/structure/log-spec.md` 了解格式。
 
 對每個 Step 1 成功的 raw 檔，使用 `obsidian append` 直接追加 record-only 類型的 ingest 條目：
 

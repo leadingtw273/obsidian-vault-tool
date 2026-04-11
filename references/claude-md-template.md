@@ -94,7 +94,7 @@ obsidian_cli: obsidian
 
 ## Wiki 分類規範
 
-知識筆記依主題性質分為四類，儲存於對應子資料夾。詳細判準請見 `references/wiki-category-spec.md`。
+知識筆記依主題性質分為四類，儲存於對應子資料夾。詳細判準請見 `references/taxonomy/wiki-category-spec.md`。
 
 | wiki_category | 定義 | 範例 |
 |---------------|------|------|
@@ -114,14 +114,14 @@ obsidian_cli: obsidian
 - **角色**：Wiki 目錄，供 LLM 在歸檔與查詢時快速定位主題頁
 - **維護者**：主對話（非 sub-agent，避免並行寫入衝突）
 - **更新時機**：每次 archive 完成後、curator 完成後
-- **詳細格式**：見 `references/index-spec.md`
+- **詳細格式**：見 `references/structure/index-spec.md`
 
 ### log.md
 
 - **角色**：時間軸日誌，append-only，記錄所有 ingest / query / curator 事件
 - **維護者**：主對話
 - **格式前綴**：`## [YYYY-MM-DD HH:mm] [type] | [標題]`，type 為 `ingest` / `query` / `curator`
-- **詳細格式**：見 `references/log-spec.md`
+- **詳細格式**：見 `references/structure/log-spec.md`
 
 ---
 

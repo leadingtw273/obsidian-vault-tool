@@ -56,7 +56,7 @@
 
 ## 步驟 4：覆蓋所有模板
 
-讀取 `${CLAUDE_PLUGIN_ROOT}/references/templates-spec.md` 了解完整規格。
+讀取 `${CLAUDE_PLUGIN_ROOT}/references/structure/templates-spec.md` 了解完整規格。
 
 在 `templates/` 目錄**覆蓋**以下 3 個模板（無論是否已存在）：
 
@@ -155,7 +155,7 @@ obsidian create vault=[vault_name] path="index.md" content="# Wiki Index\n" over
 
 ## 步驟 6：補齊資料夾
 
-讀取 `${CLAUDE_PLUGIN_ROOT}/references/folder-structure.md` 確認完整規格。
+讀取 `${CLAUDE_PLUGIN_ROOT}/references/structure/folder-structure.md` 確認完整規格。
 
 確保以下資料夾存在（缺少的建立，多餘的不刪）：
 

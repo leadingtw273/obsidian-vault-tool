@@ -92,7 +92,7 @@ Step 4：概念（兜底）
 
 ## 同名異物處理
 
-> 完整判定流程與命名規則定義於 `references/topic-matching-spec.md`「同名異物處理」段落，此處為摘要。
+> 完整判定流程與命名規則定義於 `references/taxonomy/topic-matching-spec.md`「同名異物處理」段落，此處為摘要。
 
 - **判定依據**：`tags[0]` 第一層相同 → 同一主題（upsert）；不同 → 同名異物（另建新頁）
 - **命名規則**：同名異物在標題後加括號分類詞，如 `Claude (Anthropic).md` vs `Claude Debussy.md`

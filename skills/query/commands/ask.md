@@ -180,7 +180,7 @@ Wiki 中未涵蓋 [X 面向]。以下內容為一般知識補充（非 Vault 歸
 
 ## Step 7：追加 log.md
 
-讀取 `${CLAUDE_PLUGIN_ROOT}/references/log-spec.md` 了解格式。
+讀取 `${CLAUDE_PLUGIN_ROOT}/references/structure/log-spec.md` 了解格式。
 
 **取得時間戳記**：
 
@@ -208,7 +208,7 @@ obsidian append vault=[vault_name] path="log.md" content="\n## [YYYY-MM-DD HH:mm
 
 > **觸發條件**：`[回填狀態]` 為已寫入，且 Step 6 有實際寫入（新建或 merge）總覽頁。
 
-讀取 `${CLAUDE_PLUGIN_ROOT}/references/index-spec.md` 了解條目格式。
+讀取 `${CLAUDE_PLUGIN_ROOT}/references/structure/index-spec.md` 了解條目格式。
 
 使用 obsidian CLI append 追加一行條目（index.md 為 append-only，由 curator 定期清理去重）：
 

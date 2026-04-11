@@ -117,7 +117,7 @@ Agent tool，`subagent_type: "obsidian-vault-tool:wiki-writer"`。
 
 ## Step 4：更新 index.md（主對話執行）
 
-讀取 `${CLAUDE_PLUGIN_ROOT}/references/index-spec.md` 了解更新規則。
+讀取 `${CLAUDE_PLUGIN_ROOT}/references/structure/index-spec.md` 了解更新規則。
 
 執行流程：
 
@@ -140,7 +140,7 @@ obsidian append vault=[vault_name] path="index.md" content="\n[YYYY-MM-DD] [[主
 
 ## Step 5：追加 log.md（主對話執行）
 
-讀取 `${CLAUDE_PLUGIN_ROOT}/references/log-spec.md` 了解格式。
+讀取 `${CLAUDE_PLUGIN_ROOT}/references/structure/log-spec.md` 了解格式。
 
 使用 `obsidian append` 直接追加 knowledge-only 類型的 ingest 條目：
 

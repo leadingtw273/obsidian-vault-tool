@@ -10,7 +10,7 @@ allowed-tools: ["Read", "Glob", "Grep", "Bash"]
 
 審查知識筆記標籤，確保符合 Vault 標籤規範。
 
-標籤規則與合法分類層級定義於 `${CLAUDE_PLUGIN_ROOT}/references/tag-topic-spec.md`，執行前必讀。
+標籤規則與合法分類層級定義於 `${CLAUDE_PLUGIN_ROOT}/references/taxonomy/tag-topic-spec.md`，執行前必讀。
 
 ## 標籤格式摘要
 

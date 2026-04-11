@@ -40,7 +40,7 @@ frontmatter 之後的所有內容視為「原始內容」（body），完整保�
 - `date` 必須符合 `YYYY-MM-DD` 格式
 - `author` 若缺失或為空字串，自動補為 `unknown`（不熔斷）
 
-**路徑安全檢查**（依 `${CLAUDE_PLUGIN_ROOT}/references/path-safety-spec.md`）：
+**路徑安全檢查**（依 `${CLAUDE_PLUGIN_ROOT}/references/governance/path-safety-spec.md`）：
 
 對 `title`、`source`、`author` 欄位執行 REJECT 檢查，偵測以下不合法模式則熔斷：
 
@@ -109,7 +109,7 @@ raw 檔：[raw 檔絕對路徑]
 2. 識別 1-5 個知識主題，以**樹狀結構**輸出（見下方格式）
 3. 決定來源概述（10 字內，用於檔名）
 
-> **路徑安全規則**（完整規格見 `${CLAUDE_PLUGIN_ROOT}/references/path-safety-spec.md`）：
+> **路徑安全規則**（完整規格見 `${CLAUDE_PLUGIN_ROOT}/references/governance/path-safety-spec.md`）：
 > 主題標題與來源概述均會成為檔案路徑的一部分，必須執行三階段檢查：
 >
 > 1. **REJECT 檢查**：若含 `../`、`..\`、以 `/`/`~` 開頭、含 null byte、或為純點檔名 → 熔斷中止
@@ -122,7 +122,7 @@ raw 檔：[raw 檔絕對路徑]
 
 #### 主題樹輸出格式
 
-依 `${CLAUDE_PLUGIN_ROOT}/references/topic-hierarchy-spec.md` 的三維度判斷，將主題組織為樹狀結構：
+依 `${CLAUDE_PLUGIN_ROOT}/references/taxonomy/topic-hierarchy-spec.md` 的三維度判斷，將主題組織為樹狀結構：
 
 ```
 知識主題樹：

@@ -300,7 +300,7 @@ raw_archived_path：[raw/archived/[檔名].md]
 
 ### 1.6.2 偵測父子關係
 
-依 `references/topic-hierarchy-spec.md` 的「父子關係判準」，對以下兩組配對進行評估：
+依 `references/taxonomy/topic-hierarchy-spec.md` 的「父子關係判準」，對以下兩組配對進行評估：
 
 **a. 新主題之間**：`deduped_topics[]` 內部，兩兩比對是否存在父子關係。
 **b. 新主題 vs 既有頁面**：每個新主題是否為某既有頁面的子實體。
@@ -451,7 +451,7 @@ Agent tool，`subagent_type: "obsidian-vault-tool:wiki-writer"`。
 
 ## Step 4：更新 index.md（主對話執行）
 
-讀取 `${CLAUDE_PLUGIN_ROOT}/references/index-spec.md` 了解更新規則。
+讀取 `${CLAUDE_PLUGIN_ROOT}/references/structure/index-spec.md` 了解更新規則。
 
 執行流程：
 
@@ -477,7 +477,7 @@ obsidian append vault=[vault_name] path="index.md" content="\n[YYYY-MM-DD] [[主
 
 ## Step 5：追加 log.md（主對話執行）
 
-讀取 `${CLAUDE_PLUGIN_ROOT}/references/log-spec.md` 了解格式。
+讀取 `${CLAUDE_PLUGIN_ROOT}/references/structure/log-spec.md` 了解格式。
 
 對每個 Step 1 成功處理的 raw 檔，使用 `obsidian append` 直接追加 ingest 條目。
 

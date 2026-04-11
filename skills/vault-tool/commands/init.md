@@ -82,7 +82,7 @@ ${CLAUDE_PLUGIN_ROOT}/scripts/check-deps.sh
 
 ### 步驟 4A-1：建立資料夾結構
 
-讀取 `${CLAUDE_PLUGIN_ROOT}/references/folder-structure.md` 了解完整規格。
+讀取 `${CLAUDE_PLUGIN_ROOT}/references/structure/folder-structure.md` 了解完整規格。
 
 嘗試在 Vault 根目錄建立以下資料夾（使用 `mkdir -p`）：
 
@@ -151,7 +151,7 @@ templates/
 
 ### 步驟 4B-1：建立模板檔案
 
-讀取 `${CLAUDE_PLUGIN_ROOT}/references/templates-spec.md` 了解完整規格。
+讀取 `${CLAUDE_PLUGIN_ROOT}/references/structure/templates-spec.md` 了解完整規格。
 
 在 `templates/` 目錄建立以下 3 個模板（不存在則建立，已存在略過）：
 

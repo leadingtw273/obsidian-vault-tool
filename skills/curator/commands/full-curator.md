@@ -236,7 +236,7 @@ Grep 工具：
 
 ### 2g. 結構升級偵測
 
-> 規格詳見 `${CLAUDE_PLUGIN_ROOT}/references/topic-hierarchy-spec.md`。
+> 規格詳見 `${CLAUDE_PLUGIN_ROOT}/references/taxonomy/topic-hierarchy-spec.md`。
 
 **定義**：單頁主題（不含 `type: topic-hub`）中的 `##` 章節已累積足夠內容，符合升級為目錄結構的條件。
 
@@ -265,7 +265,7 @@ Grep 工具：
 
 ### 2h. 父子關係偵測（跨頁面）
 
-> 規格詳見 `${CLAUDE_PLUGIN_ROOT}/references/topic-hierarchy-spec.md`「父子關係判準」段落。
+> 規格詳見 `${CLAUDE_PLUGIN_ROOT}/references/taxonomy/topic-hierarchy-spec.md`「父子關係判準」段落。
 
 **定義**：兩個獨立頁面之間存在明顯的父子從屬關係，但目前以扁平結構並存，建議重組為目錄結構。
 
@@ -417,7 +417,7 @@ Grep 工具：
 - [[主題知識/概念/RAG]]：章節「Embedding」被 3 個來源引用
 ...
 
-**建議**：執行自動修補將這些頁面升級為目錄結構（topic/topic.md + 子頁面）。升級流程見 `references/topic-hierarchy-spec.md`。
+**建議**：執行自動修補將這些頁面升級為目錄結構（topic/topic.md + 子頁面）。升級流程見 `references/taxonomy/topic-hierarchy-spec.md`。
 
 ---
 
@@ -429,7 +429,7 @@ Grep 工具：
 - [[主題知識/概念/XXX]] ← [[主題知識/概念/YYY]]（組成關係：YYY 是 XXX 的核心組件）
 ...
 
-**建議**：執行自動修補將父頁面升級為目錄結構，並將子頁面移入。重組流程見 `references/topic-hierarchy-spec.md`。
+**建議**：執行自動修補將父頁面升級為目錄結構，並將子頁面移入。重組流程見 `references/taxonomy/topic-hierarchy-spec.md`。
 
 ---
 
@@ -474,7 +474,7 @@ Grep 工具：
 
 ## Step 5：追加 log.md
 
-讀取 `${CLAUDE_PLUGIN_ROOT}/references/log-spec.md` 了解格式（若尚未讀取）。
+讀取 `${CLAUDE_PLUGIN_ROOT}/references/structure/log-spec.md` 了解格式（若尚未讀取）。
 
 **時間戳記**：執行以下命令取得當前本地時間：
 
@@ -541,7 +541,7 @@ obsidian create vault=[vault_name] path="log.md" content="# Wiki Log\n\n<!-- app
 
 ### 自動修補：index.md（管道 2：Write 工具）
 
-1. 讀取 `${CLAUDE_PLUGIN_ROOT}/references/index-spec.md` 了解條目格式
+1. 讀取 `${CLAUDE_PLUGIN_ROOT}/references/structure/index-spec.md` 了解條目格式
 2. 依 `pages[]` 在主對話內部組合完整 index.md 內容：
    - 開頭固定為 `# Wiki Index\n`
    - 對所有主題頁產出最新條目，每個主題只保留一筆
@@ -582,7 +582,7 @@ obsidian create vault=[vault_name] path="log.md" content="# Wiki Log\n\n<!-- app
 
 ### 自動修補：結構升級（管道 2 + Bash）
 
-> 升級流程詳見 `${CLAUDE_PLUGIN_ROOT}/references/topic-hierarchy-spec.md`。
+> 升級流程詳見 `${CLAUDE_PLUGIN_ROOT}/references/taxonomy/topic-hierarchy-spec.md`。
 
 對 `upgrade_candidates[]` 中的每個頁面，按以下步驟執行升級：
 
@@ -631,7 +631,7 @@ obsidian create vault=[vault_name] path="log.md" content="# Wiki Log\n\n<!-- app
 
 ### 自動修補：父子關係重組（管道 2 + Bash）
 
-> 重組流程詳見 `${CLAUDE_PLUGIN_ROOT}/references/topic-hierarchy-spec.md`。
+> 重組流程詳見 `${CLAUDE_PLUGIN_ROOT}/references/taxonomy/topic-hierarchy-spec.md`。
 
 **前置確認**：每組父子候選需使用者逐一確認（或批次確認），不自動執行。確認時顯示：
 
