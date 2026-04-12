@@ -15,12 +15,9 @@ LLM 不只「**檢索**」知識（傳統 RAG），而是「**累積與維護**�
 | `vault-tool` | `/vault-tool {init\|update\|reset\|delete}` | — | 建立 / 升級 / 重置 / 刪除 vault |
 | `archive` | 「歸檔對話」「處理這個 raw」 | INGEST | raw → 歷史紀錄 + 主題知識（雙寫）|
 | `query` | 「查一下」「wiki 裡有沒有」 | QUERY | 從 vault 合成答案 + 寫入 outputs/queries/ |
-| `reflect` ⭐ | 「reflect」「找漏洞」（v0.9.0-rc 啟用）| REFLECT | 反向檢驗 + Gap Analysis（防回音室、找空白）|
-| `ask` ⭐ | 「我想搞清楚 X」（v0.9.0-rc 啟用）| ADD-QUESTION | 結構化開放問題隊列 |
-| `curator` | 「lint」「wiki 體檢」 | LINT | 健康檢查（孤兒、矛盾、staleness、wikilink 格式...）|
-| `tag-review` | 「檢查標籤」 | — | 標籤品質控制（v0.9.0-rc 後併入 curator）|
-
-⭐ 標記的 skill 在 v0.9.0-alpha 已完成 spec，實作預定 v0.9.0-rc。
+| `reflect` | 「reflect」「找漏洞」「綜合分析」 | REFLECT | 反向檢驗 + 模式掃描 + Gap Analysis（防回音室、找空白）|
+| `ask` | 「我想搞清楚 X」「add question」 | ADD-QUESTION | 結構化開放問題隊列（QUESTIONS.md）|
+| `curator` | 「lint」「wiki 體檢」「檢查標籤」 | LINT | 健康檢查（12 項，含 confidence/staleness/contradictions/wikilink/tag）|
 
 ## 知識庫架構（v0.9）
 
@@ -127,7 +124,10 @@ lint
 
 ## 版本
 
-- `0.9.0-alpha` — 融合 Karpathy LLM Wiki 模式：references 5 資料夾重組、agent-mode + confidence-gating + 6 份新 quality/workflow spec、interaction_mode 機制（spec 階段，實作預定 0.9.0-beta/rc）
+- `0.9.0` — 融合 Karpathy LLM Wiki 模式：
+  - **alpha**: references 5 資料夾重組 + 10 份新 spec（agent-mode / confidence-gating / sha-integrity / contradictions / staleness / aliases-and-wikilink / outputs-layer / reflect-flow / ask-flow / query-flow）
+  - **beta**: record-writer SHA-256 + wiki-writer confidence gate / agent-mode / aliases / Contradictions / Evolution Log + archive 9 步驟 + vault-tool v0.9 結構 + query/curator outputs 持久化（10 case 測試全 PASS）
+  - **rc**: reflect skill（Stage 0+1+3 Preview）+ ask skill（QUESTIONS.md）+ 極簡索引維護 + v0.8→v0.9 遷移腳本 + tag-review 併入 curator
 - `0.8.0` — 一致性與安全強化：path-safety 三階段防護、consistency-boundary 弱一致性模型、decision-tables、lint-specs.sh、迴歸測試
 - `0.7.0` — 全面審查修復（22 項 + 三方復盤 3 項）
 - `0.6.0` — Wiki 主題層級機制 + curator skill：引入動態層級（單頁→目錄結構，最深 3 層）、wiki-writer 簡化、record-writer 輸出樹狀結構

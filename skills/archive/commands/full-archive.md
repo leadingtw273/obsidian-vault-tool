@@ -618,6 +618,39 @@ obsidian append vault=[vault_name] path="index.md" content="\n[YYYY-MM-DD] [[主
 
 ---
 
+## Step 4.3：更新極簡索引層（v0.9.0-rc 新增）
+
+> 依 Brain Trust RC 檢核結論：索引 append **必須在 Step 3 驗證通過後**才執行，
+> 確保「驗證失敗的頁面不會進 index」。因此放在 Step 4（index.md 已更新）之後。
+
+### topic-index.md 增量更新
+
+對每個 Step 3 驗證通過的知識頁，用 Write 工具 append 到 `[vault_path]/index/topic-index.md`：
+
+```markdown
+- [主題標題] → [[歷史紀錄/[類型]/[日期]/[序號]_[概述]]] + [[主題知識/[類別]/[標題]]]
+```
+
+每個主題一行，格式為「主題名 → source wikilink + concept wikilink」。
+
+若 topic-index.md 不存在 → 跳過（v0.8 vault 未升級）。
+
+### question-index.md 增量更新
+
+若 Step 2.3 有 QUESTIONS 匹配結果（`question_matches[]` 非空），用 Write 工具 append 到 `[vault_path]/index/question-index.md`：
+
+```markdown
+- Q-NNN → [[歷史紀錄/[類型]/[日期]/[序號]_[概述]]] (candidate to close|enrich)
+```
+
+若 question-index.md 不存在 → 跳過。
+
+> **append-only 注意事項**：索引檔可能有重複條目（同一主題 append 多次）。
+> 這是預期行為——由 curator 定期清理去重。
+> reflect Stage 1 讀取 topic-index 時，應自動去重再使用。
+
+---
+
 ## Step 4.5：更新 overview.md Health Dashboard（v0.9.0-beta 新增）
 
 > 依 `${CLAUDE_PLUGIN_ROOT}/references/governance/agent-mode.md` 規範，
