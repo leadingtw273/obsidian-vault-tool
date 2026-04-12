@@ -33,7 +33,7 @@ color: green
    ```
    ⚠️ 並行感知：本主題「[主題A]」與同批次的「[主題B]」可能高度相似，建議後續 curator 檢查是否需要合併
    ```
-2. **Step 6 交叉連結時**：清單中的主題標題一併納入交叉連結候選（視為已存在的頁面），路徑推斷為 `主題知識/概念/[標題].md`（預設概念類，實際路徑可能不同）
+2. **Step 6 交叉連結時**：清單中的主題標題一併納入交叉連結候選（視為已存在的頁面）。路徑推斷**必須從 `wiki_pages` 快取取得實際路徑**（含正確的 wiki_category 資料夾），**禁止使用預設「概念/」猜測**——錯誤的分類路徑會造成 wikilink 失效（v0.9.0-beta bugfix）
 3. **不阻塞寫入**：即使偵測到相似主題，仍然正常完成寫入流程。合併由主對話的 Step 1.5 或後續 curator 處理
 
 ## 執行步驟
@@ -289,9 +289,11 @@ obsidian append vault=[vault_name] path="主題知識/[wiki_category]/[主題標
    接著依規則表決定動作（**含矛盾偵測時阻斷自動升級**）：
 
    ```
-   IF 本次新增了 ⚠ Contradiction (Sub-step 5 觸發):
+   IF 既有 ## Contradictions 段落含任何未解決的 ⚠ 條目（不含 [已解決] 前綴）
+      OR 本次新增了 ⚠ Contradiction (Sub-step 5 觸發):
      → confidence 維持，source_count 更新但不升級（升級被阻斷）
      → 不寫入 high_candidate
+     → Evolution Log 追加：「[date]（N sources）：升級被既有矛盾阻斷」
    ELIF 既有 confidence == "low" AND 新 source_count >= 3:
      → confidence 自動升級為 "medium"
      → Evolution Log 追加：「[date]（N sources）：自動升級為 medium」
@@ -363,11 +365,15 @@ obsidian append vault=[vault_name] path="主題知識/[wiki_category]/[主題標
 掃描 vault 所有既有主題頁標題，在本次寫入的正文中自動置換為 wikilink：
 
 ```
-從 Step 4 預載的 wiki_pages 取得所有 title
-（若 Step 5 新建了頁面，該頁已知標題一併納入候選）
+從 Step 4 預載的 wiki_pages 取得所有 {title, path, wiki_category} 三元組
+（若 Step 5 新建了頁面，該頁已知 title + path 一併納入候選）
 → 去除 .md 後綴、去除分類詞括號（如 ` (Anthropic)`）
-→ 產生候選標題清單
+→ 產生候選清單，每個候選含 title 與 path
 ```
+
+> **v0.9.0-beta bugfix**：置換時必須使用候選的**實際 `path`**（從 `wiki_pages` 取得），
+> **禁止用 `主題知識/概念/[標題].md` 猜測**。不同 wiki_category 的頁面路徑不同
+> （如實體在 `主題知識/實體/`、比較在 `主題知識/比較/`），用錯路徑會造成 wikilink 失效。
 
 對每個候選標題，在本次寫入的正文中執行字串搜尋與置換：
 

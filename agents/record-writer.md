@@ -164,7 +164,14 @@ raw 檔：[raw 檔絕對路徑]
 
 **路徑規則**：`歷史紀錄/[類型目錄]/[YYYY-MM-DD]/[序號]_[概述].md`
 
-類型目錄對照表：
+**personal_writing 路徑覆寫**（v0.9.0-beta bugfix）：
+
+> 若呼叫方傳入 `personal_writing=true`，**無論 content_type 為何**，類型目錄強制覆寫為 `個人寫作/`。
+> 這確保來自 `raw/personal/` 的個人寫作一律歸入 `歷史紀錄/個人寫作/`，不會因 content_type 被路由到 `對話/` 或 `文章/`。
+>
+> 覆寫優先順序：`personal_writing=true` > content_type 對照表
+
+類型目錄對照表（`personal_writing=false` 時使用）：
 
 | content_type | 目錄 |
 |---|---|
