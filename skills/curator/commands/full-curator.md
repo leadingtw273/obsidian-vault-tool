@@ -59,9 +59,15 @@ Wiki 為空，主題知識/ 下尚無任何頁面，無需檢查。
 
 ---
 
-## Step 2：執行 8 項檢查
+## Step 2：執行 14 項檢查
 
-對 `pages[]` 依序執行以下 8 項檢查（2a~2f 為健康檢查，2g~2h 為結構偵測）。所有檢查**均由主對話執行**，不委派 sub-agent。
+對 `pages[]` 依序執行以下 14 項檢查。所有檢查**均由主對話執行**，不委派 sub-agent。
+
+分組：
+- **2a~2f**：基礎健康檢查（孤兒 / 交叉引用 / 過期 / 矛盾 / 缺漏概念 / index 一致性）
+- **2g~2h**：結構偵測（升級候選 / 父子關係）
+- **2i~2m**：v0.9.0-beta 新增（confidence / contradictions pending / staleness / wikilink 格式 / high_candidate pending）
+- **2n**：v0.9.0-rc 新增（tag 品質檢查，原 tag-review skill 併入）
 
 > **效能提示**：多項檢查（2b、2e、2g）需要讀取頁面完整內容。建議在 Step 1 掃描後，對每個頁面用 Read 工具讀取一次完整內容並快取於記憶體中，避免同一頁面跨檢查重複讀取。
 
@@ -82,6 +88,9 @@ Wiki 為空，主題知識/ 下尚無任何頁面，無需檢查。
   - `contradictions_pending[]`：含 ⚠ 條目（未標 [已解決]）的頁面，格式 `(page_path, contradiction_count)`
   - `wikilink_violations[]`：違反 wikilink 格式鐵律，格式 `(page_path, line, raw_wikilink, suggested_slug)`
   - `high_candidates_pending[]`：含 high_candidate: true 的頁面，格式 `(page_path, source_count, since_date)`
+- **v0.9.0-rc 新增**：
+  - `tag_violations[]`：違反 tag 規範的頁面（原 tag-review skill 併入 curator），格式 `(page_path, violation_type, detail, suggestion)`
+    - violation_type 枚舉：`missing-hierarchy` / `incomplete-hierarchy` / `category-mismatch` / `over-limit` / `fragment-tag` / `english-format`
 
 ---
 
@@ -426,28 +435,84 @@ Grep 工具：
 
 ---
 
-## Step 3：tag-review 整合（選擇性）
+### 2n. Tag 品質檢查（v0.9.0-rc 新增，原 tag-review skill 併入）
 
-> **前置說明**：tag-review 是獨立 skill，非 agent，無法透過 `subagent_type` 參數直接委派 Agent tool 呼叫。因此本 Step 採用「提示使用者」的方式整合，而非自動執行。
+> 依 `${CLAUDE_PLUGIN_ROOT}/references/taxonomy/tag-topic-spec.md` 的標籤規範。
+> v0.9.0-rc 起 tag-review 不再是獨立 skill，標籤品質檢查由 curator 自動執行。
 
-對以下頁面，在 Step 4 報告末尾提示使用者可進一步執行 tag-review：
+**檢查項目**：對 `pages[]` 中每個知識筆記的 `tags` 欄位執行以下檢查，違規寫入 `tag_violations[]`：
 
-- `orphans[]` 中的所有頁面（孤兒頁可能標籤分類有誤，導致未被連結）
-- `stale[]` 中距今超過 180 天的頁面（長期未更新的頁面標籤可能已過時）
+1. **`tags[0]` 格式**：必須為層級結構路徑（含 `/`，如 `技術/AI/LLM`）。若 `tags[0]` 無 `/` → 違規類型 `missing-hierarchy`
+2. **層級拆解完整性**：`tags[0]` 拆開的每一層（如 `技術`、`AI`、`LLM`）是否都存在於 `tags` 陣列中。若缺任何一層 → 違規類型 `incomplete-hierarchy`
+3. **`category` 一致性**：`category` 欄位是否等於 `tags[0]` 的第一層。若不等 → 違規類型 `category-mismatch`
+4. **總數上限**：`tags` 總數是否 ≤ 10。若 > 10 → 違規類型 `over-limit`
+5. **碎片化偵測**：**跨 `pages[]` 統計**每個描述標籤的出現次數。只在單一頁面出現一次的標籤（非層級結構 / 非層級拆解）→ 違規類型 `fragment-tag`（提示合併或移除）
+6. **PascalCase 檢查**（英文描述標籤）：英文 tag 應為 `PascalCase`（如 `RAG`、`PromptEngineering`），非 PascalCase（含連字符、底線、空格）→ 違規類型 `english-format`
 
-在報告末尾輸出：
+**執行流程**：
 
 ```
+1. 用 obsidian tags vault=[vault_name] counts（或 Glob + 讀 frontmatter）取得全 vault tag 使用統計
+2. 對 pages[] 中每個頁面逐一檢查 6 項規則
+3. 違規寫入 tag_violations[]，格式 (page_path, violation_type, detail, suggestion)
+```
+
+**對應到 Step 4 報告段落**：`### ⚠ Tag Quality Violations`
+
+**記錄**：將違規清單存入 `tag_violations[]`，格式包含違規類型 + 具體描述 + 建議修正。
+
 ---
 
-## 建議後續執行 tag-review 的頁面
+## Step 3：Tag-Review Finalization（v0.9.0-rc 重寫）
 
-以下頁面可能標籤分類有誤或過時，建議另行觸發 tag-review skill 檢查：
+> **v0.9.0-rc 變更**：tag-review 已併入 curator（見 Step 2n）。本 Step 不再「提示觸發外部 skill」，
+> 而是依 `interaction_mode` 對 Step 2n 的 `tag_violations[]` 做最終處理。
 
-- [[主題知識/實體/XXX]]（原因：孤兒頁）
-- [[主題知識/概念/YYY]]（原因：已 200 天未更新）
-...
+### 3.1 檢查是否有違規
+
+若 `tag_violations[]` 為空 → 跳過本 Step。
+
+### 3.2 Mode 分流
+
+| Mode | 行為 |
+|------|------|
+| `human` | 在 Step 4 報告中以結構化清單列出所有違規，附修正建議，等待使用者決定是否執行 Step 6 的自動修補 |
+| `agent` | 違規寫入 `outputs/lint/<date>.md` 的 `### ⚠ Tag Quality Violations` 段落，**不修補**（修補需人類確認） |
+
+### 3.3 輸出格式（Step 4 報告中）
+
 ```
+### ⚠ Tag Quality Violations (N 個)
+
+#### missing-hierarchy（tags[0] 無層級結構）
+- [[主題知識/概念/XXX]]: tags[0] = `RAG`
+  建議: 改為 `技術/AI/RAG`
+
+#### incomplete-hierarchy（層級拆解不完整）
+- [[主題知識/概念/YYY]]: tags[0] = `技術/AI/LLM`，缺平坦標籤 `技術` 或 `AI` 或 `LLM`
+  建議: tags 陣列補上缺少的層級
+
+#### category-mismatch（category ≠ tags[0] 第一層）
+- [[主題知識/實體/ZZZ]]: tags[0] = `技術/AI`，但 category = `工具`
+  建議: category 改為 `技術`
+
+#### fragment-tag（只出現一次的碎片化標籤）
+- [[主題知識/概念/WWW]]: tag `特殊術語2024` 僅在此頁出現
+  建議: 考慮移除或合併到更通用的標籤
+
+#### english-format（英文標籤非 PascalCase）
+- [[主題知識/實體/VVV]]: tag `prompt-engineering` 應為 `PromptEngineering`
+  建議: 改為 PascalCase
+```
+
+### 3.4 衍生建議（原 tag-review 的補強邏輯）
+
+對以下情境**額外**在 Step 4 報告提示「標籤可能需要重新審視」（但不自動改）：
+
+- `orphans[]` 中的所有頁面：孤兒頁可能因標籤分類不當而無法被其他頁引用
+- 長期未更新（`staleness_warnings[]`）的頁面：標籤可能反映過時的理解
+
+這些情境不產生 `tag_violations[]` 條目（因為標籤本身格式可能無錯），僅在報告末尾以「**建議重新審視 tag 的頁面**」段落提示。
 
 ---
 
@@ -629,7 +694,7 @@ date: [YYYY-MM-DD]
 graph-excluded: true
 generator: curator
 interaction_mode: [human|agent]
-checks_run: 12
+checks_run: 14
 violations_found: [N]
 ---
 ```
@@ -644,7 +709,7 @@ violations_found: [N]
 **寫入命令**：
 
 ```bash
-obsidian create vault=[vault_name] path="outputs/lint/[YYYY-MM-DD].md" content="---\ntype: output\noutput_kind: lint\ndate: [YYYY-MM-DD]\ngraph-excluded: true\ngenerator: curator\ninteraction_mode: [human|agent]\nchecks_run: 12\nviolations_found: [N]\n---\n\n[Step 4 完整報告內容 + v0.9 新區段]"
+obsidian create vault=[vault_name] path="outputs/lint/[YYYY-MM-DD].md" content="---\ntype: output\noutput_kind: lint\ndate: [YYYY-MM-DD]\ngraph-excluded: true\ngenerator: curator\ninteraction_mode: [human|agent]\nchecks_run: 14\nviolations_found: [N]\n---\n\n[Step 4 完整報告內容 + v0.9 新區段]"
 ```
 
 若內容超過 16KB → 分段 append。
