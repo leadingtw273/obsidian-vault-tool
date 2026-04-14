@@ -133,7 +133,7 @@ lint
 - `references/structure/` — 儲存結構：`folder-structure.md` / `templates-spec.md` / `index-spec.md` / `log-spec.md` / `outputs-layer.md`
 - `references/taxonomy/` — 分類規則：`topic-matching-spec.md` / `topic-hierarchy-spec.md` / `wiki-category-spec.md` / `tag-topic-spec.md` / `aliases-and-wikilink.md`
 - `references/quality/` — 品質保證：`sha-integrity.md` / `contradictions.md` / `staleness.md` / `decision-tables-spec.md`
-- `references/workflow/` — 流程定義：`archive-flow.md` / `reflect-flow.md` / `ask-flow.md` / `query-flow.md`
+- `references/workflow/` — 流程定義：`ask-flow.md` / `query-flow.md` / `reflect-flow.md`（archive 流程詳見 `skills/archive/`）
 - `references/cli-usage.md` — obsidian CLI 操作手冊（雙管道設計說明）
 - `references/claude-md-template.md` — vault 內 CLAUDE.md 範本（作為架構 SSOT）
 
@@ -143,8 +143,19 @@ lint
 - `scripts/migrate-v08-to-v09.sh` — v0.8 → v0.9 vault 遷移腳本
 - `scripts/check-deps.sh` — 檢查 obsidian-skills 依賴
 - `scripts/check-init-status.sh` — 檢查 vault 是否已初始化
+- `scripts/pre-commit-hook.sample` — 可選的 pre-commit 範本（copy 到 `.git/hooks/pre-commit` 啟用）
 
 執行 `bash scripts/lint-specs.sh` 跑跨檔一致性檢查。
+
+### Tests
+
+- `tests/fixtures/` — 測試輸入樣本
+- `tests/expected/` — 期望輸出（供迴歸比對）
+- `tests/README.md` — 測試執行說明
+
+### Docs（內部開發紀錄）
+
+- `docs/superpowers/plans/` — 歷次版本的 plan 與設計紀錄（維護者參考用，非使用者必讀）
 
 ## 版本
 
