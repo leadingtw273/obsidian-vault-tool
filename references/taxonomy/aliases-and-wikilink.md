@@ -1,19 +1,21 @@
 # Aliases and Wikilink Format
 
-> **status**: v0.9.0-alpha（new spec）
+> **status**: v0.9.0 — 2026-04-27 對齊實踐（從「英文 slug 鐵律」改為「禁用解析地雷」）
 > **scope**: taxonomy — 分類層
 > **authority**: 本檔為 aliases 欄位與 Wikilink 格式規範的權威定義
-> **inspired by**: Karpathy LLM Wiki 教程的 aliases / Wikilink 格式鐵律
+> **history**:
+> - v0.9.0-alpha（初版）：沿用 Karpathy LLM Wiki 教程的英文小寫 slug 鐵律
+> - v0.9.0（2026-04-27）：經 curator 健康檢查發現實作早已偏離（73 頁全部用中文/大寫專有名詞），規格與實踐對齊，改為「允許中文 + 大寫英文 + 有意義空格，僅禁止解析地雷字元」
 
 ## Summary
 
-知識筆記必須支援**中英雙語別名**（`aliases` 欄位），讓「Attention Mechanism」與「注意力機制」指向同一頁。同時定義 **Wikilink 格式鐵律**：所有 wikilink 目標必須使用英文小寫連字符 slug（不是中文檔名、不是駝峰、不是底線），中文名稱透過 aliases 對應。本機制的目的是讓知識庫能跨語言累積，且不會出現「同一概念兩個檔案」的命名分叉。
+知識筆記必須支援**中英雙語別名**（`aliases` 欄位），讓「Attention Mechanism」與「注意力機制」指向同一頁。檔名與 wikilink 目標**遵循領域慣例**：中文主題用中文（`圖像編輯模型`）、英文專有名詞保留原大小寫（`Claude Code`、`Stable Diffusion`、`SDXL`）、中英混合也允許（`GGUF 格式`、`MCP（Model Context Protocol）`）。**禁止三類解析地雷**：底線（`value_investing`）、駝峰式（`valueInvesting`）、無意義單獨空格作為分隔（如把 `RAG模型` 寫成 `RAG 模型` 純為 SEO）。本機制的目的是讓知識庫能跨語言累積，且讀起來符合自然慣例。
 
 ## Core Concepts
 
 1. **aliases**：concept / entity 頁的 frontmatter 陣列欄位，列出該主題的所有別名（含中英雙語、縮寫、替代名稱）
-2. **Wikilink slug 鐵律**：檔名與 wikilink 目標一律英文小寫連字符
-3. **正文標題格式**：`「中文主名稱（English Name）」`
+2. **Wikilink 命名原則**：跟隨領域慣例，禁用解析地雷
+3. **正文標題格式**：`「中文主名稱（English Name）」`（仍保留，幫助跨語言檢索）
 4. **alias 匹配**：wiki-writer 在建立新 concept 前必須檢查既有 aliases 防重複建立
 5. **alias 不可隨意改**：alias 列表是審計資料，**只增不減**（除非確認誤建立）
 
@@ -42,60 +44,55 @@ aliases:
 | 排序 | 按使用頻率（最常用的別名放前面）|
 | 大小寫 | 保留原樣（"GPT" 不寫成 "gpt"）|
 
-### 2. Wikilink 格式鐵律
+### 2. Wikilink 命名原則
 
 <!-- decision-id: aliases-wikilink-format-rule -->
+<!-- updated: 2026-04-27 — 從英文 slug 鐵律改為「跟隨領域慣例 + 禁用解析地雷」 -->
 
-**所有 wikilink 目標必須使用英文小寫連字符格式（slug）**。
+**核心原則**：wikilink 目標跟隨**領域慣例**命名，僅禁止確實會引發解析或可讀性問題的字元。
 
 ✅ 合法：
 ```
-[[rag]]
-[[attention-mechanism]]
-[[warren-buffett]]
-[[claude-code]]
+[[RAG]]                          # 縮寫保留大寫
+[[Claude Code]]                  # 英文專有名詞含空格
+[[Stable Diffusion]]             # 英文產品名
+[[ComfyUI]]                      # 英文產品名（PascalCase 是該產品官方寫法）
+[[圖像編輯模型]]                  # 純中文主題
+[[GGUF 格式]]                    # 中英混合
+[[MCP（Model Context Protocol）]] # 中文（英文補述）格式
+[[模型量化|Quantization]]         # alias 顯示英文，目標中文
 ```
 
-❌ 違規：
+❌ 違規（會引發解析問題或可讀性問題）：
 ```
-[[價值投資]]              # 中文檔名
-[[ValueInvesting]]        # 駝峰
-[[value_investing]]       # 底線
-[[Value Investing]]       # 空格
+[[value_investing]]      # 底線：與駝峰一樣造成 grep 困難
+[[valueInvesting]]       # 駝峰：tokenize 不穩定，case-sensitive 易誤
+[[ConcatRAG架構]]         # 連續英文+中文無分隔：可讀性差
 ```
 
-**例外情況**：
-- 來源頁的 wikilink 可保留原檔名（`[[歷史紀錄/文章/2026-04-15/01_RAG架構簡介]]`），因為來源檔名有時間戳格式
-- 目錄路徑可包含中文（`[[主題知識/概念/...]]`），但 leaf 檔名必須是英文 slug
+⚠ 灰色地帶（不視為違規，但建議盡量避免）：
+- 名稱含全形標點（`、`、`：`）— Obsidian 處理沒問題，但跨平台可能有編碼風險
+- 名稱含 emoji — 同上
 
-### 3. 檔名 slug 規則
+**檔名與 wikilink 目標一致**：因 Obsidian 用「最短路徑解析」，檔名 = wikilink leaf。範例：`主題知識/實體/Claude Code/Claude Code.md` 對應 `[[主題知識/實體/Claude Code/Claude Code]]` 或最短形式 `[[Claude Code]]`。
+
+### 3. 命名選擇指引
 
 <!-- decision-id: aliases-slug-naming-rule -->
+<!-- updated: 2026-04-27 — 從「英文 slug 強制」改為「依主題本質選擇」 -->
 
-| 規則 | 範例 |
-|------|------|
-| 全小寫 | `attention-mechanism` 不是 `Attention-Mechanism` |
-| 連字符分隔 | `attention-mechanism` 不是 `attention_mechanism` |
-| 純 ASCII | `cafe` 不是 `café` |
-| 無前綴 | `rag` 不是 `concept-rag`（資料夾已表示類別）|
-| 保留縮寫大寫的小寫版 | `gpt`, `rag`, `ai` |
-| 多義詞用更具體的詞 | `transformer-architecture` 而非 `transformer`（避免與「電器變壓器」歧義）|
+| 主題本質 | 推薦命名 | 範例 |
+|---------|---------|------|
+| 純英文專有名詞 | 保留官方寫法 | `Claude Code`、`ComfyUI`、`SDXL` |
+| 純中文概念 | 用中文 | `個人知識管理`、`圖像編輯模型`、`上下文管理` |
+| 中英混合（中為主）| 中（英）格式 | `MCP（Model Context Protocol）` |
+| 中英混合（英為主）| 英 中格式或保留英 | `GGUF 格式`、`Gemma 4` |
+| 縮寫 | 保留大寫 | `RAG`、`MCP`、`PKM` |
+| 多義詞 | 加限定詞 | `提示詞反推（Image Captioning）` 而非 `提示詞反推` |
 
-slug 由 wiki-writer 在建立新 concept 時生成，演算法（建議實作）：
+**多義詞處理**（重要）：當不同主題有相同名稱（如 "Transformer" 既是 AI 模型也是電器），仍**用限定詞區分檔名**，不是用 alias 處理。範例：`Transformer 架構` vs `Transformer 變壓器`。詳見第 7 節。
 
-```
-1. 取主名稱（通常是英文，若原文是中文則先翻譯為英文）
-2. lowercase
-3. 替換非 ASCII 字元為 ASCII（café → cafe）
-4. 替換非字母數字字元為連字符
-5. 連續連字符縮為單一
-6. 移除頭尾連字符
-```
-
-範例：
-- "Retrieval-Augmented Generation" → `retrieval-augmented-generation`
-- "Café" → `cafe`
-- "C++" → `cpp`（手動處理特殊情況）
+**避免無意義差異**：同一主題不要在不同頁面寫成 `RAG` 和 `RAG 模型` 與 `Retrieval-Augmented Generation` 並行存在。選一個作為檔名，其餘進 aliases。
 
 ### 4. 中文名稱的處理
 
@@ -188,16 +185,18 @@ aliases:
 
 ### 8. Wikilink 違規的處理
 
-curator 應該偵測違規 wikilink 並列入 lint 報告：
+curator 只偵測**真正的解析地雷**（底線、駝峰、連續中英無分隔）並列入 lint 報告：
 
 ```
 outputs/lint/2026-04-20.md:
   ## ⚠ Wikilink Format Violations
-  - `[[價值投資]]` in 主題知識/概念/investment.md (Line 23)
-    建議: 改為 `[[value-investing]]`，並確認 主題知識/概念/value-investing.md 存在
-  - `[[ValueInvesting]]` in 主題知識/總覽/2026-investment.md (Line 8)
-    建議: 改為 `[[value-investing]]`
+  - `[[value_investing]]` in 主題知識/概念/investment.md (Line 23)
+    建議: 底線形式造成 grep 困難，改為 `[[價值投資]]` 或 `[[Value Investing]]`
+  - `[[valueInvesting]]` in 主題知識/總覽/2026-investment.md (Line 8)
+    建議: 駝峰形式 tokenize 不穩定，改為 `[[Value Investing]]` 或 `[[價值投資]]`
 ```
+
+**不再視為違規**：含中文、含大寫英文、含空格的 wikilink — 這些是領域慣例命名，與規格 v0.9.0 對齊。
 
 curator 不會自動修補（因為改錯可能 break 其他連結），但會列入待人類處理清單。
 
@@ -312,15 +311,18 @@ wiki-writer 處理:
 
 ## Rationale
 
-### 為什麼 wikilink 必須是英文 slug
+### 為什麼 v0.9.0 從「英文 slug 鐵律」改為「跟隨領域慣例」
 
-中文檔名 / wikilink 在實作層面會遇到多個問題：
-- **跨平台檔案系統**：Windows 與 Linux 對中文檔名的處理不同
-- **URL safe**：未來若 vault 同步到 Web 服務需要 URL encode
-- **grep 效率**：英文 slug 更容易用 ASCII 工具處理
-- **agent 友善**：不同 LLM 對中文 tokenize 的方式差異大，slug 統一英文減少歧義
+**v0.9.0-alpha 的設計**：沿用 Karpathy LLM Wiki 教程的英文小寫 slug 規則，理由是跨平台 / URL safe / grep 效率 / agent 友善。
 
-中文資訊不消失——它存在於 `title` 欄位、aliases 欄位、正文第一段。圖譜節點顯示用中文 title，搜尋用 aliases，wikilink 用 slug。每個用途用最適合的形式。
+**v0.9.0 的修正**（基於 leadingtw_vault 累積實踐）：
+
+1. **wiki-writer 從未實作 slug 生成**：73 頁全部用中文/大寫英文檔名，從沒有「翻譯為英文 slug」這一步發生過。規格與實作從第一天就分叉。
+2. **強制英化會破壞領域慣例**：`Claude Code` 不是 `claude-code`、`ComfyUI` 不是 `comfy-ui`、`SDXL` 不是 `sdxl` — 這些是業界官方寫法，強改 slug 反而違反讀者直覺。
+3. **中文檔名實測沒問題**：Obsidian、Windows / WSL / macOS / Linux、git、grep 都能處理 UTF-8 中文檔名。Obsidian 的 wikilink 解析也支援。原本擔心的跨平台問題在 2026 年實際上已不存在。
+4. **真正的解析地雷只有三類**：底線（grep 區分困難）、駝峰（tokenize 不穩定）、連續無分隔（可讀性差）。其餘都是審美問題不是技術問題。
+
+**結論**：規格應該描述實踐能做到的事，而不是強加抽象的「乾淨」標準。中文資訊不只進 aliases，也直接進檔名與 wikilink。
 
 ### 為什麼 aliases 不可隨意刪除
 
@@ -345,17 +347,15 @@ LLM 在閱讀知識筆記時是「線性掃描」模式。第一段的格式決�
 
 正確做法是**分別建立兩個檔案**，各自有自己的 aliases 列表，但允許 alias 字串重疊（"Transformer" 可在兩個檔案的 aliases 列表中）。wiki-writer 在 alias 匹配時會找到兩個 candidate，必須走同名異物判定流程。
 
-### 為什麼 slug 規則排除底線、駝峰、空格
+### 為什麼禁止底線與駝峰，但允許空格
 
-- **底線 vs 連字符**：兩者都常見，選一個避免分叉。連字符比底線在 URL / Markdown 中更常見。
-- **駝峰**：對 grep 不友善（無法輕易區分單字邊界），且 case-sensitive 會造成 `[[ValueInvesting]]` 與 `[[valueInvesting]]` 被視為不同 link。
-- **空格**：Markdown wikilink 容許空格，但會降低跨工具相容性（部分 parser 不支援）。
+- **底線**：grep 時 `value_investing` 會被當成單一 token，無法快速找到單字邊界。連字符也有類似問題但連字符在中文檔名中極少混用，分歧較小，所以也不視為違規。
+- **駝峰**：`ValueInvesting` 與 `valueInvesting` 在 case-sensitive 系統中是兩個不同連結，容易造成「兩個檔案指同一概念」的命名分叉。tokenize 也較不穩定。
+- **空格不再禁止**：Obsidian wikilink 完全支援空格（`[[Claude Code]]`），且這正是 wiki-writer 在 archive 流程中累積的慣例（73 頁中超過 30 個檔名含空格）。Markdown 規範也允許。實測沒有相容性問題。
 
-統一用「小寫連字符」是 web 慣例（URL slug），accessibility 與相容性最高。
+### 與 Karpathy 教程的差異
 
-### 與 Karpathy 教程的對齊
-
-Karpathy 教程的 Wikilink 格式鐵律就是「英文小寫連字符」，本 spec 完全沿用。aliases 跨語言也是直接繼承。不做差異化。
+Karpathy 教程的 Wikilink 格式鐵律是「英文小寫連字符」，但那個教程針對的是**英文母語社群**的純英文 vault。對中文使用者而言，強制中文 → 英文翻譯 → slug 化會丟失原始語境（「個人知識管理」翻成 `personal-knowledge-management` 後反而不利於中文 grep）。本 plugin 的規格在 v0.9.0 起與 Karpathy 教程**主動分流**：保留 aliases 跨語言設計，但 wikilink 命名跟隨使用者實際語言慣例。
 
 ## Cross References
 
