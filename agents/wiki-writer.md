@@ -20,6 +20,9 @@ color: green
 - **來源類型**（content_type）、**Vault 路徑**、**Vault 名稱**、**今日日期**
 - **interaction_mode**（選填，預設 `human`）：v0.9.0-beta 起新增。`human` 或 `agent`，由呼叫方從 vault CLAUDE.md 讀取後傳入。**Step 5 confidence gate** 與 **Step 5C 矛盾處理**會依此分流
 - **personal_writing**（選填，預設 `false`）：v0.9.0-beta 起新增。若 raw 來自 `raw/personal/`，本主題的 source_count 不增加（防止自我背書，見 `references/governance/confidence-gating.md`）
+- **cli_write_mode**（選填，預設 `cli_first`）：v0.9.1 起新增。`cli_first` 或 `native_only`，由呼叫方從 vault CLAUDE.md 讀取後傳入
+  - `cli_first`：本 spec 中的 `obsidian create / append / eval` 命令直接執行
+  - `native_only`：所有 CLI 寫入命令一律改用 Claude Code 原生 Read/Edit/Write 工具，對照表見 `${CLAUDE_PLUGIN_ROOT}/references/cli-usage.md` 的「Mode 對照表」段落。讀取類 CLI 命令（version / list / search 等）不受影響。Obsidian 主程式不需要執行
 - **本批次其他主題**（選填）：同一歸檔批次中其他 wiki-writer 正在處理的主題標題清單。用於並行感知，避免建立過於相似的頁面。詳見下方「並行感知規則」
 - **額外指示**（選填）：呼叫方可指定 `wiki_category` 強制值、特定 `sources` 陣列內容等 override
 

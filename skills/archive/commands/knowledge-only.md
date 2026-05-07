@@ -88,6 +88,7 @@ Agent tool，`subagent_type: "obsidian-vault-tool:wiki-writer"`。
 **今日日期**：[YYYY-MM-DD]
 **interaction_mode**：[human|agent]（由 Step 0.1 讀取）
 **personal_writing**：[true|false]（從歷史紀錄路徑判斷：若含「個人寫作/」→ true）
+**cli_write_mode**：[cli_first|native_only]（由共用前置讀取）
 **本批次其他主題**：[列出本批次所有其他主題標題，每行一個；若僅一個主題則省略此欄位]
 ```
 

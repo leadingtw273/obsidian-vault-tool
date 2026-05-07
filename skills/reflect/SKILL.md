@@ -39,6 +39,10 @@ reflect 的核心語意是「**檢視知識庫自身的健康**」，不是「�
 
 讀取 `commands/reflect.md` 並按其流程執行。
 
+> **CLI Write Mode 提醒（v0.9.1）**：執行前讀取 vault CLAUDE.md 的 `cli_write_mode`（缺欄位預設 `cli_first`）。
+> 若為 `native_only`，commands 中所有 `obsidian append / eval` 一律改用 Read/Edit/Write，
+> 對照表見 `${CLAUDE_PLUGIN_ROOT}/references/cli-usage.md` 的「Mode 對照表」段落。
+
 ## 版本
 
 v0.9.0-rc — Preview 版本（Stage 0 + Stage 1 輕量 + Stage 3）。Stage 2 深度合成延 v1.0。

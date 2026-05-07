@@ -325,7 +325,7 @@ vault_path_windows: [vault_path_windows]
 ✓ 模板檔案建立完成（templates/ 下 3 個模板：raw、來源記錄、知識筆記，含 v0.9 SHA-256/confidence 欄位）
 ✓ index.md / log.md / QUESTIONS.md / overview.md 系統檔已建立
 ✓ index/{topic-index,question-index}.md 極簡索引已建立
-✓ CLAUDE.md 已生成（plugin v[version]，含 interaction_mode: human 預設）
+✓ CLAUDE.md 已生成（plugin v[version]，含 interaction_mode: human、cli_write_mode: cli_first 預設）
 ✓ .obsidian 設定已對齊（或：.obsidian 尚未建立，Obsidian 首次開啟後可重新執行；或：因路徑限制無法自動修改，已提供手動引導）
 ✓ 全域 CLAUDE.md 已記錄此 Vault
 
@@ -341,4 +341,8 @@ Vault 已就緒（v0.9.0-beta）。可用的 skills：
 
 若要切換為 agent mode，編輯 vault/CLAUDE.md 將 `interaction_mode` 改為 `agent`。
 詳見 `references/governance/agent-mode.md`。
+
+若 obsidian CLI 寫入會弄崩 Obsidian 主程式（例如 Obsidian 1.12.7 + 中文檔名密集 vault），
+編輯 vault/CLAUDE.md 將 `cli_write_mode` 改為 `native_only` 規避 IPC bug。
+詳見 `references/cli-usage.md` 的「Mode 對照表」與「IPC 訊息序列化崩潰」段落。
 ```

@@ -18,6 +18,10 @@ allowed-tools: ["Read", "Write", "Edit", "Glob", "Grep", "Bash"]
 1. 讀取 `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` 取得 `version` 欄位，記錄為 `plugin_version`
 2. 偵測 WSL2 環境：若 vault 路徑以 `/mnt/` 開頭，判定為 WSL2 環境
 
+> **CLI Write Mode 提醒（v0.9.1）**：vault-tool 自身的 init / update / reset / delete 操作涉及 vault CLAUDE.md 與資料夾結構，
+> 在 `cli_write_mode: native_only` 環境下應優先使用 Claude Code 原生 Read/Edit/Write/mkdir 而非 obsidian CLI 寫入命令。
+> 對照表見 `${CLAUDE_PLUGIN_ROOT}/references/cli-usage.md` 的「Mode 對照表」段落。
+
 ---
 
 ## 意圖解析

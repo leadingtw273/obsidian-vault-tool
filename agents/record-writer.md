@@ -15,6 +15,9 @@ color: purple
 - **Vault 路徑**、**Vault 名稱**、**今日日期**：由呼叫方提供
 - **指定序號**（選填）：由呼叫方預分配的序號數字（如 `02`）。有此參數時，Step 6 直接使用該序號，不自行查詢目錄現有序號
 - **interaction_mode**（選填，預設 `human`）：v0.9 起新增。`human` 或 `agent`，由呼叫方從 vault CLAUDE.md 讀取後傳入。本 agent 不依此分流，但會記錄到輸出供後續 step 與 log.md 使用
+- **cli_write_mode**（選填，預設 `cli_first`）：v0.9.1 起新增。`cli_first` 或 `native_only`，由呼叫方從 vault CLAUDE.md 讀取後傳入
+  - `cli_first`：本 spec 中的 `obsidian create / append / eval` 命令直接執行
+  - `native_only`：所有 CLI 寫入命令一律改用 Claude Code 原生 Read/Edit/Write 工具，對照表見 `${CLAUDE_PLUGIN_ROOT}/references/cli-usage.md` 的「Mode 對照表」段落。讀取類 CLI 命令（version / list / search 等）不受影響。Obsidian 主程式不需要執行
 
 ## 執行步驟
 

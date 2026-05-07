@@ -57,6 +57,7 @@ Agent tool，`subagent_type: "obsidian-vault-tool:record-writer"`。
 **今日日期**：[YYYY-MM-DD]
 **指定序號**：[N]（由 Step 0.5 預分配）
 **interaction_mode**：[human|agent]（由 Step 0.1 讀取）
+**cli_write_mode**：[cli_first|native_only]（由共用前置讀取）
 ```
 
 **等待輸出並解析**：

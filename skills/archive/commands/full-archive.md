@@ -257,6 +257,7 @@ Agent tool，`subagent_type: "obsidian-vault-tool:record-writer"`。
 **指定序號**：[N]（由 Step 0.5 預分配）
 **interaction_mode**：[human|agent]（由 Step 0.1 讀取）
 **personal_writing**：[true|false]（由 Step 0.7 判定）
+**cli_write_mode**：[cli_first|native_only]（由共用前置讀取）
 ```
 
 **等待每個 agent 輸出並解析**：
@@ -441,6 +442,7 @@ Agent tool，`subagent_type: "obsidian-vault-tool:wiki-writer"`。
 **今日日期**：[YYYY-MM-DD]
 **interaction_mode**：[human|agent]（由 Step 0.1 讀取，影響 wiki-writer Step 5B Sub-step 8 的 confidence gate 行為）
 **personal_writing**：[true|false]（由 Step 0.7 判定，影響 wiki-writer 的 source_count 計算）
+**cli_write_mode**：[cli_first|native_only]（由共用前置讀取）
 **本批次其他主題**：[列出本批次所有其他獨立主題標題，每行一個]
 ```
 

@@ -176,7 +176,16 @@ obsidian create vault=[vault_name] path="index/question-index.md" content="---\n
 - 預設值: `interaction_mode: human`
 - 加入位置: 「初始化狀態」段落的 yaml 區塊內
 
-由 Step 3 的 CLAUDE.md 重新生成統一處理（從新版 template 自動帶入）。
+### v0.9.1 CLAUDE.md 必補欄位
+
+若現有 vault 的 `CLAUDE.md` 缺 `cli_write_mode` 欄位（v0.9.0 vault 升級時必發生），自動補入：
+- 預設值: `cli_write_mode: cli_first`（保守選擇，不破壞既有 CLI 寫入流程）
+- 加入位置: 「初始化狀態」段落的 yaml 區塊內，緊接 `interaction_mode` 之後
+- 並在 CLAUDE.md 中加入「CLI Write Mode」段落（從新版 template 帶入）
+
+> 若使用者環境已知 obsidian CLI 寫入會弄崩 Obsidian 主程式（例如 Obsidian 1.12.7 + 中文檔名密集 vault），update 完成後**告知使用者可手動將 `cli_write_mode` 改為 `native_only`** 規避 IPC bug。詳見 `${CLAUDE_PLUGIN_ROOT}/references/cli-usage.md` 的「IPC 訊息序列化崩潰」段落。
+
+以上欄位由 Step 3 的 CLAUDE.md 重新生成統一處理（從新版 template 自動帶入）。
 
 ---
 
@@ -208,7 +217,7 @@ obsidian create vault=[vault_name] path="index/question-index.md" content="---\n
 ## 完成摘要
 
 ```
-✓ CLAUDE.md 已更新至 plugin v[新版本]（plugin_version 已寫入，自訂區塊已保留，interaction_mode 預設 human）
+✓ CLAUDE.md 已更新至 plugin v[新版本]（plugin_version 已寫入，自訂區塊已保留，interaction_mode 預設 human，cli_write_mode 預設 cli_first）
 ✓ 補齊資料夾：[列出新建的，含 v0.9.0-beta 新增 raw/personal/、歷史紀錄/個人寫作/、outputs/{queries,reflect,lint}/、index/]
 ✓ 補齊模板：[列出新建的或更新的，含 v0.9.0-beta 知識筆記 5 個新欄位 + 來源記錄 4 個 SHA 欄位]
 ✓ index.md / log.md：[已建立空白範本 / 已存在略過]
@@ -217,5 +226,6 @@ obsidian create vault=[vault_name] path="index/question-index.md" content="---\n
 ✓ 全域 CLAUDE.md 已同步
 
 > 升級至 v0.9.0-beta 後，建議檢視 vault/CLAUDE.md 的 interaction_mode 欄位。
+> 升級至 v0.9.1 後，若 obsidian CLI 寫入會弄崩 Obsidian 主程式（中文檔名 + Obsidian 1.12.7 IPC bug），可將 `cli_write_mode` 改為 `native_only` 全面改走 Read/Edit/Write。
 > 若用於 AI agent 長期知識庫場景，可改為 `agent`。詳見 references/governance/agent-mode.md。
 ```

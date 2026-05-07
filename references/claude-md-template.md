@@ -15,6 +15,7 @@ vault_path: {{vault_path}}
 plugin_version: {{plugin_version}}
 obsidian_cli: obsidian
 interaction_mode: human   # human | agent — 見「Interaction Mode」段落（v0.9.0-alpha 新增）
+cli_write_mode: cli_first   # cli_first | native_only — 見「CLI Write Mode」段落（v0.9.1 新增）
 ```
 
 ---
@@ -147,14 +148,21 @@ interaction_mode: human   # human | agent — 見「Interaction Mode」段落（
 
 ---
 
-## CLI 寫入管道
+## CLI Write Mode（v0.9.1 新增）
 
-本 Vault 的寫入操作分為兩套管道：
+本 Vault 的 `cli_write_mode` 欄位決定 plugin 的寫入路徑：
 
-- **管道 1（obsidian CLI）**：日常歸檔操作（archive / wiki-writer / query）使用 `create`、`append`、`eval + processFrontMatter` 等官方 CLI 命令（property:set 在 Obsidian 1.12.7 有 bug，已停用）
-- **管道 2（Claude Code Read/Edit/Write）**：curator 維護操作使用原生工具做正文修補
+| 值 | 適用情境 | 行為 |
+|----|---------|------|
+| `cli_first`（預設）| obsidian CLI + Obsidian 主程式 IPC 健全的環境 | 日常歸檔操作（archive / wiki-writer / query）走 obsidian CLI（`create` / `append` / `eval + processFrontMatter`）；curator 走 Read/Edit/Write |
+| `native_only` | 已知 obsidian CLI 寫入會弄崩 Obsidian 主程式（例如 Obsidian 1.12.7 中文檔名 IPC bug）| 所有寫入操作改用 Claude Code 原生 Read/Edit/Write；CLI 僅用於讀取（version / list / search 等）|
 
-詳細規格見 `references/cli-usage.md`。
+**切換規則**：
+- 修改本檔案的 `cli_write_mode` 欄位即可切換
+- `native_only` 模式下 Obsidian 主程式不需要執行（plugin 直接操作 .md 檔）
+- spec 檔內 `obsidian create / append / eval` 範例僅適用於 `cli_first`；`native_only` 統一以 `references/cli-usage.md` 的「Mode 對照表」替代
+
+詳細規格與 Mode 對照表見 `references/cli-usage.md`。
 
 ---
 
