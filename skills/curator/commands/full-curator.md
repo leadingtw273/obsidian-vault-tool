@@ -272,11 +272,12 @@ Grep 工具：
 
 ---
 
-### 2g. 結構升級偵測
+### 2g. 結構升級偵測（v0.9.0 升級 — 2026-04-27）
 
 > 規格詳見 `${CLAUDE_PLUGIN_ROOT}/references/taxonomy/topic-hierarchy-spec.md`。
+> v0.9.0 升級：原 v0.8 規則「≥3 個 ### 子標題」過於寬鬆（73 頁 vault 實測產生 66 個假候選），新增**字數門檻 + 排除類型**。
 
-**定義**：單頁主題（不含 `type: topic-hub`）中的 `##` 章節已累積足夠內容，符合升級為目錄結構的條件。
+**定義**：單頁主題（不含 `type: topic-hub`）中的 `##` 章節已累積足夠內容、且不屬於排除類型，符合升級為目錄結構的條件。
 
 **執行流程**：
 
@@ -285,19 +286,33 @@ Grep 工具：
 1. 使用 Read 工具讀取完整內容
 2. 解析所有 `##` 章節，對每個章節統計：
    - `###` 子標題數量
+   - 章節**正文字數**（去除子標題本身的純段落字數）
    - 該章節在 `pages[]` 中被多少不同 `sources` 引用（比對該章節標題是否出現在其他頁面的 sources 相關內容中）
-3. 判斷是否符合升級條件：
-   - **量化條件 A**：任一 `##` 章節包含 **≥3 個 `###` 子標題**
-   - **量化條件 B**：任一 `##` 章節被 **≥3 個不同來源**引用
-4. 符合條件者記錄入 `upgrade_candidates[]`
+3. **排除規則**（任一命中即跳過該章節）：
+   - **archive 補充章節**：標題符合任一模式：
+     - `re.match(r'^補充（', section_name)` — 顯式補充章節
+     - `re.search(r'（\d{4}-\d{2}-\d{2}\s*來自', section_name)` — 含日期 + 「來自 [[...]]」格式（archive 流程的時間戳記）
+   - **核心定義章節**：標題為「核心參數」/「核心能力」/「核心概念」/「Definition」/「定義」/「摘要」/「References」
+   - **步驟性章節**：標題以「一、」/「二、」/「三、」/「Step 1」/「步驟 1」等序號開頭（這類章節是線性流程，拆開反而難導航）
+   - **目錄已存在的同名子主題**：父主題已是 topic-hub 且 wikilink 中已含同名 `[[子主題]]`
+4. 對通過排除規則的章節，判斷是否符合升級條件：
+   - **量化條件**（A AND B 同時滿足）：
+     - A: ≥3 個 `###` 子標題
+     - B: 正文字數 ≥ 2000
+   - **替代量化條件**（C 單獨滿足）：
+     - C: 被 ≥3 個不同來源引用
+   - **質化條件**：record-writer 曾識別為獨立主題（從 sources 註記推斷）
+5. 符合任一條件者記錄入 `upgrade_candidates[]`
 
-**記錄**：格式 `(page_path, section_name, trigger_reason)`。
+**記錄**：格式 `(page_path, section_name, trigger_reason, char_count, sub_count)`。
 
 範例：
 ```
-(主題知識/概念/RAG.md, "Chunk 策略", "4 個 ### 子標題")
-(主題知識/概念/RAG.md, "Embedding", "被 3 個來源引用")
+(主題知識/概念/RAG.md, "Chunk 策略", "4 個 ### 子標題 + 3500 字", 3500, 4)
+(主題知識/概念/RAG.md, "Embedding", "被 3 個來源引用", 1200, 2)
 ```
+
+**v0.8 → v0.9 兼容**：若使用者期望舊規則（不過濾），可在主對話中傳遞 `--legacy-upgrade-detection` 旗標跳過排除規則（但預設啟用 v0.9 規則）。
 
 ---
 
@@ -397,29 +412,39 @@ Grep 工具：
 
 ---
 
-### 2l. Wikilink 格式違規檢查（v0.9.0-beta 新增）
+### 2l. Wikilink 格式違規檢查（v0.9.0 對齊 — 2026-04-27）
 
-> 依 `${CLAUDE_PLUGIN_ROOT}/references/taxonomy/aliases-and-wikilink.md` 的 Wikilink 格式鐵律。
+> 依 `${CLAUDE_PLUGIN_ROOT}/references/taxonomy/aliases-and-wikilink.md` 的「禁用解析地雷」原則。
+> v0.9.0-alpha 的「英文 slug 鐵律」已廢止（與實作分叉、強迫中文使用者翻譯不合理），改為只偵測真正會引發解析問題的字元。
 
 **檢查項目**：
 
-對 `pages[]` 中每個頁面（讀取完整內容），用 regex 偵測 `[[...]]` 模式：
+對 `pages[]` 中每個頁面（讀取完整內容），用 regex 偵測 `[[...]]` 模式，**只標記三類解析地雷**：
 
-- 違規 1：含中文字元（`[[價值投資]]`）
-- 違規 2：含大寫字母（`[[ValueInvesting]]`、`[[Value Investing]]`）
-- 違規 3：含底線（`[[value_investing]]`）
-- 違規 4：含空格（`[[value investing]]`）
-- 違規 5：駝峰式（`[[valueInvesting]]`）
+- 違規 1：**含底線**（`[[value_investing]]`、`[[claude_code]]`）— grep 困難
+- 違規 2：**駝峰式**（`[[valueInvesting]]`、`[[claudeCode]]`）— tokenize 不穩定 + case-sensitive 易誤
+- 違規 3：**連續中英無分隔**（`[[ConcatRAG架構]]`、`[[本地LLM]]`）— 可讀性差，建議用空格分開
+
+**不再視為違規**（v0.9.0 對齊實踐）：
+- 含中文字元（`[[圖像編輯模型]]`）— 領域慣例命名
+- 含大寫英文（`[[Claude Code]]`、`[[Stable Diffusion]]`、`[[SDXL]]`）— 業界官方寫法
+- 含空格（`[[Claude Code]]`、`[[GGUF 格式]]`）— Obsidian 完全支援
 
 **例外**：
-- 來源頁的 wikilink（`[[歷史紀錄/...]]`）允許含日期格式（`歷史紀錄/文章/2026-04-15/01_RAG架構簡介`），不視為違規
-- 目錄路徑可包含中文（`[[主題知識/概念/...]]`），但 leaf 檔名必須是英文 slug
+- 來源頁的 wikilink（`[[歷史紀錄/...]]`）允許含日期格式與底線，不視為違規（來源檔名格式 `01_主題名稱` 是 archive 流程慣例）
+- **`[序號]_[概述]` 格式的純檔名 wikilink**（即使省略 `歷史紀錄/` 路徑，如 `[[01_RAG架構簡介]]`、`[[09_IP-Adapter工作流程實務教學]]`）也是來源頁，放行 — 偵測規則：leaf 以 `^\d+_` 開頭即視為來源頁引用
+
+**駝峰判定**：
+- 純英文且開頭小寫 + 內含大寫（`valueInvesting`）→ 駝峰
+- 純英文且開頭大寫 + 內含大寫（`ValueInvesting`）→ PascalCase，**不視為違規**（業界專有名詞如 `ComfyUI` 是 PascalCase）
+- 中英混合不視為駝峰（`Z-Image` 是連字符不是駝峰）
 
 **執行流程**：
 
 對每個違規 wikilink：
-- 計算建議的 slug 形式（lowercase + 連字符化）
-- 加入 `wikilink_violations[]`，格式 `(page_path, line, raw_wikilink, suggested_slug)`
+- 加入 `wikilink_violations[]`，格式 `(page_path, line, raw_wikilink, violation_type, suggestion)`
+- `violation_type` 枚舉：`underscore` / `camel-case` / `no-separator`
+- `suggestion`：空格分開的建議形式（如 `value_investing` → 建議 `Value Investing` 或 `價值投資`）
 
 **對應到 Step 4 報告段落**：`### ⚠ Wikilink Format Violations`
 
